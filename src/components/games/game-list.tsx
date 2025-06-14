@@ -12,6 +12,7 @@ interface GameListProps {
 	onGuess: (gameId: string) => void;
 	currentDate: Date;
 	onDateChange: (newDate: Date) => void;
+	currentUserId: string | null;
 }
 
 export function GameList({
@@ -20,6 +21,7 @@ export function GameList({
 	onGuess,
 	currentDate,
 	onDateChange,
+	currentUserId,
 }: GameListProps) {
 	const [filteredGames, setFilteredGames] = useState(games);
 
@@ -82,6 +84,7 @@ export function GameList({
 							game={game}
 							userGuess={userGuesses[game.id]}
 							onGuess={onGuess}
+							currentUserId={currentUserId}
 						/>
 					))
 				) : (

@@ -1,5 +1,5 @@
+import { supabase } from "@/lib/supabase-client";
 import { Tables } from "@/types/supabase";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Ban, ChevronDown, ChevronUp, DiamondPlus } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -19,10 +19,10 @@ interface GameCardProps {
 		away_guess: number;
 	} | null;
 	onGuess: (gameId: string) => void;
+	currentUserId: string | null;
 }
 
-export function GameCard({ game, userGuess, onGuess }: GameCardProps) {
-	const supabase = createClientComponentClient();
+export function GameCard({ game, userGuess, onGuess, currentUserId }: GameCardProps) {
 
 	const gameTime = new Date(game.game_time);
 	const currentTime = new Date();
@@ -37,17 +37,8 @@ export function GameCard({ game, userGuess, onGuess }: GameCardProps) {
 	const [showAllGuesses, setShowAllGuesses] = useState(false);
 	const [allGuesses, setAllGuesses] = useState<GuessWithProfile[]>([]); // Estado para armazenar todos os palpites
 	const [isLoadingAllGuesses, setIsLoadingAllGuesses] = useState(false);
-	const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
 	useEffect(() => {
-		const fetchUser = async () => {
-			const {
-				data: { user },
-			} = await supabase.auth.getUser();
-			setCurrentUserId(user?.id || null);
-		};
-		fetchUser();
-
 		if (showAllGuesses && allGuesses.length === 0 && !isLoadingAllGuesses) {
 			const fetchAllGuesses = async () => {
 				setIsLoadingAllGuesses(true);
@@ -78,7 +69,6 @@ export function GameCard({ game, userGuess, onGuess }: GameCardProps) {
 		allGuesses.length,
 		isLoadingAllGuesses,
 		game.id,
-		supabase,
 	]);
 
 	if (userGuess && game.home_score !== null && game.away_score !== null) {
@@ -113,6 +103,43 @@ export function GameCard({ game, userGuess, onGuess }: GameCardProps) {
 
 	const checkValue = (value: number | null | undefined) => {
 		return value !== null && value !== undefined;
+	};
+
+	const hasGuessed = !!userGuess;
+	const isGameFinished = game.home_score !== null && game.away_score !== null;
+	const canGuess = !isGameFinished;
+
+	const calculateResult = (): 'correct_score' | 'correct_winner' | 'incorrect' | 'no_guess' => {
+		if (userGuess && game.home_score !== null && game.away_score !== null) {
+			const homeActual = game.home_score;
+			const awayActual = game.away_score;
+			const homeGuess = userGuess.home_guess;
+			const awayGuess = userGuess.away_guess;
+
+			const didGuessHomeWin = homeGuess > awayGuess;
+			const didGuessAwayWin = awayGuess > homeGuess;
+			const didGuessDraw = homeGuess === awayGuess;
+
+			const didHomeWin = homeActual > awayActual;
+			const didAwayWin = awayActual > homeActual;
+			const didDraw = homeActual === awayActual;
+
+			// Acertou o placar exato
+			if (homeGuess === homeActual && awayGuess === awayActual) {
+				return 'correct_score';
+			} // Acertou o vencedor
+			else if (
+				(didGuessHomeWin && didHomeWin) ||
+				(didGuessAwayWin && didAwayWin) ||
+				(didGuessDraw && didDraw)
+			) {
+				return 'correct_winner';
+			} // Errou tudo
+			else {
+				return 'incorrect';
+			}
+		}
+		return 'no_guess';
 	};
 
 	return (
@@ -269,8 +296,7 @@ export function GameCard({ game, userGuess, onGuess }: GameCardProps) {
 										} else if (guess.away_guess > guess.home_guess) {
 											winningTeamLogoUrl = game.away_team.logo_url;
 											winningTeamName = game.away_team.name;
-										} else {
-											// Palpite de empate
+										} else { // Palpite de empate
 											isDrawGuess = true;
 										}
 
@@ -293,10 +319,7 @@ export function GameCard({ game, userGuess, onGuess }: GameCardProps) {
 											const didDraw = homeActual === awayActual;
 
 											// Acertou o placar exato
-											if (
-												homeGuess === homeActual &&
-												awayGuess === awayActual
-											) {
+											if (homeGuess === homeActual && awayGuess === awayActual) {
 												guessCardBgColor = "bg-green-100/40"; // Verde com 40% de opacidade
 												cardShadowClass = ""; // Sem sombra
 												cardBorderClass = "border border-green-500"; // Borda verde forte

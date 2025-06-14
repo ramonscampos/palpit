@@ -1,10 +1,12 @@
 "use client";
 
 import { GameList } from "@/components/games/game-list";
+import { LeaderboardTable } from "@/components/leaderboard/leaderboard-table";
+import { PredictionModal } from "@/components/predictions/prediction-modal";
 import { Button } from "@/components/ui/button";
-import { Modal } from "@/components/ui/modal";
+import { supabase } from "@/lib/supabase-client";
 import { Database } from "@/types/supabase";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { User } from "@supabase/supabase-js";
 import { LogOut } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -20,7 +22,6 @@ type UserGuess = {
 };
 
 export default function HomePage() {
-	const supabase = createClientComponentClient<Database>();
 	const router = useRouter();
 	const searchParams = useSearchParams();
 
@@ -29,9 +30,7 @@ export default function HomePage() {
 	const [loading, setLoading] = useState(true);
 	const [selectedGame, setSelectedGame] = useState<GameWithTeams | null>(null);
 	const [isModalOpen, setIsModalOpen] = useState(false);
-	const [showConfirmation, setShowConfirmation] = useState(false);
-	const [homeGuessInput, setHomeGuessInput] = useState<number | "">("");
-	const [awayGuessInput, setAwayGuessInput] = useState<number | "">("");
+	const [currentUser, setCurrentUser] = useState<User | null>(null);
 
 	const [currentDate, setCurrentDate] = useState<Date>(() => {
 		const dateParam = searchParams.get("date");
@@ -46,8 +45,6 @@ export default function HomePage() {
 		return new Date(); // Retorna a data atual se não houver param ou for inválido
 	});
 
-	const isSaveDisabled = homeGuessInput === "" || awayGuessInput === "";
-
 	useEffect(() => {
 		const loadData = async () => {
 			try {
@@ -59,6 +56,8 @@ export default function HomePage() {
 					router.push("/login");
 					return;
 				}
+
+				setCurrentUser(user);
 
 				// Carregar jogos com informações dos times
 				const { data: gamesData, error: gamesError } = await supabase
@@ -102,83 +101,32 @@ export default function HomePage() {
 		};
 
 		loadData();
-	}, [supabase, router]);
-
-	useEffect(() => {
-		// Preencher os inputs do palpite se o jogo já tiver um palpite
-		if (selectedGame && userGuesses[selectedGame.id]) {
-			setHomeGuessInput(userGuesses[selectedGame.id].home_guess);
-			setAwayGuessInput(userGuesses[selectedGame.id].away_guess);
-		} else {
-			setHomeGuessInput("");
-			setAwayGuessInput("");
-		}
-	}, [selectedGame, userGuesses]);
+	}, []);
 
 	const handleGuess = (gameId: string) => {
 		const game = games.find((g) => g.id === gameId);
 		if (game) {
 			setSelectedGame(game);
 			setIsModalOpen(true);
-			setShowConfirmation(false); // Reset confirmation state
 		}
 	};
 
 	const handleCloseModal = () => {
 		setIsModalOpen(false);
 		setSelectedGame(null);
-		setShowConfirmation(false); // Reset confirmation state
 	};
 
-	const handleConfirmSave = () => {
-		setShowConfirmation(true);
-	};
-
-	const handleSaveGuess = async () => {
+	const handleSaveGuess = (homeGuess: number, awayGuess: number) => {
 		if (!selectedGame) return;
 
-		setLoading(true);
-		const {
-			data: { user },
-		} = await supabase.auth.getUser();
-
-		if (!user) {
-			console.error("Usuário não autenticado.");
-			handleCloseModal();
-			return;
-		}
-
-		try {
-			const { error } = await supabase.from("guesses").upsert(
-				{
-					game_id: selectedGame.id,
-					user_id: user.id,
-					home_guess: Number(homeGuessInput),
-					away_guess: Number(awayGuessInput),
-				},
-				{ onConflict: "user_id,game_id" }, // Para atualizar se já existir
-			);
-
-			if (error) {
-				throw error;
-			}
-
-			// Atualiza o estado userGuesses localmente para feedback imediato
-			setUserGuesses((prevGuesses) => ({
-				...prevGuesses,
-				[selectedGame.id]: {
-					home_guess: Number(homeGuessInput),
-					away_guess: Number(awayGuessInput),
-				},
-			}));
-
-			router.refresh(); // Mantido para garantir a revalidação geral da página
-		} catch (error) {
-			console.error("Erro ao salvar palpite:", error);
-		} finally {
-			setLoading(false);
-			handleCloseModal();
-		}
+		setUserGuesses((prevGuesses) => ({
+			...prevGuesses,
+			[selectedGame.id]: {
+				home_guess: homeGuess,
+				away_guess: awayGuess,
+			},
+		}));
+		router.refresh();
 	};
 
 	const handleDateChange = (newDate: Date) => {
@@ -221,117 +169,26 @@ export default function HomePage() {
 				</div>
 			</header>
 
-			<main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+			<main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 pb-28">
 				<GameList
 					games={games}
 					userGuesses={userGuesses}
 					onGuess={handleGuess}
 					currentDate={currentDate}
 					onDateChange={handleDateChange}
+					currentUserId={currentUser?.id ?? null}
 				/>
+				<LeaderboardTable />
 			</main>
 
-			<Modal isOpen={isModalOpen} onClose={handleCloseModal} title="Palpitar">
-				{selectedGame && (
-					<div className="space-y-6">
-						<div className="flex items-center justify-between gap-8 px-4">
-							<div className="flex-1 flex flex-col items-center space-y-4">
-								<p className="font-semibold text-gray-900 h-14 flex items-center justify-center text-center">
-									{selectedGame.home_team.name}
-								</p>
-								<div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
-									{selectedGame.home_team.logo_url && (
-										<img
-											src={selectedGame.home_team.logo_url}
-											alt={selectedGame.home_team.name}
-											className="w-12 h-12 object-contain"
-										/>
-									)}
-								</div>
-								<input
-									type="number"
-									min="0"
-									value={homeGuessInput}
-									onChange={(e) => setHomeGuessInput(Number(e.target.value))}
-									className="w-20 h-12 text-center border-2 border-gray-400 rounded-lg text-lg font-bold text-gray-800 focus:border-gray-500 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-									placeholder="-"
-								/>
-							</div>
-
-							<div className="flex flex-col items-center justify-center">
-								<span className="text-2xl font-bold text-gray-400">x</span>
-							</div>
-
-							<div className="flex-1 flex flex-col items-center space-y-4">
-								<p className="font-semibold text-gray-900 h-14 flex items-center justify-center text-center">
-									{selectedGame.away_team.name}
-								</p>
-								<div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
-									{selectedGame.away_team.logo_url && (
-										<img
-											src={selectedGame.away_team.logo_url}
-											alt={selectedGame.away_team.name}
-											className="w-12 h-12 object-contain"
-										/>
-									)}
-								</div>
-								<input
-									type="number"
-									min="0"
-									value={awayGuessInput}
-									onChange={(e) => setAwayGuessInput(Number(e.target.value))}
-									className="w-20 h-12 text-center border-2 border-gray-400 rounded-lg text-lg font-bold text-gray-800 focus:border-gray-500 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-									placeholder="-"
-								/>
-							</div>
-						</div>
-
-						{!showConfirmation ? (
-							<div className="flex justify-center gap-3 pt-4 border-t border-gray-100">
-								<Button
-									variant="default"
-									onClick={handleCloseModal}
-									className="px-6 w-32 bg-gray-200 text-gray-900 hover:bg-gray-300"
-								>
-									Cancelar
-								</Button>
-								<Button
-									onClick={handleConfirmSave}
-									className={`px-6 w-32 bg-black text-white font-bold ${isSaveDisabled ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-800"}`}
-									disabled={isSaveDisabled}
-								>
-									Salvar Palpite
-								</Button>
-							</div>
-						) : (
-							<div className="space-y-4 pt-4 border-t border-gray-100 text-center">
-								<p className="text-lg font-semibold text-gray-800">
-									Tem certeza que deseja salvar este palpite?
-								</p>
-								<p className="text-sm text-gray-600">
-									Após salvar, o palpite não poderá ser alterado.
-								</p>
-								<div className="flex justify-center gap-3 mt-6">
-									<Button
-										variant="default"
-										onClick={() => setShowConfirmation(false)}
-										className="px-6 bg-gray-200 text-gray-900 hover:bg-gray-300 w-32"
-									>
-										Não
-									</Button>
-									<Button
-										onClick={handleSaveGuess}
-										className={`px-6  w-32 bg-red-400 text-white font-bold ${isSaveDisabled ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-800"}`}
-										disabled={isSaveDisabled}
-									>
-										Sim, Salvar
-									</Button>
-								</div>
-							</div>
-						)}
-					</div>
-				)}
-			</Modal>
+			<PredictionModal
+				isOpen={isModalOpen}
+				onClose={handleCloseModal}
+				selectedGame={selectedGame}
+				onSaveGuess={handleSaveGuess}
+				userGuesses={userGuesses}
+				currentUserId={currentUser?.id ?? null}
+			/>
 		</div>
 	);
 }
