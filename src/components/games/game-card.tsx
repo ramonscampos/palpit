@@ -1,7 +1,13 @@
 import { Tables } from "@/types/supabase";
-import { Ban, DiamondPlus } from "lucide-react";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { Ban, ChevronDown, ChevronUp, DiamondPlus } from "lucide-react";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 import { Button } from "../ui/button";
+
+interface GuessWithProfile extends Tables<"guesses"> {
+	profiles: { name: string | null; avatar_url: string | null } | null;
+}
 
 interface GameCardProps {
 	game: Tables<"games"> & {
@@ -16,6 +22,8 @@ interface GameCardProps {
 }
 
 export function GameCard({ game, userGuess, onGuess }: GameCardProps) {
+	const supabase = createClientComponentClient();
+
 	const gameTime = new Date(game.game_time);
 	const currentTime = new Date();
 	const timeDifference = gameTime.getTime() - currentTime.getTime(); // Diferença em milissegundos
@@ -23,8 +31,55 @@ export function GameCard({ game, userGuess, onGuess }: GameCardProps) {
 
 	const hasActualScore = game.home_score !== null && game.away_score !== null;
 
-	let resultColorClass = "bg-gray-100"; // Cor padrão (cinza claro)
+	const resultColorClass = "bg-gray-100"; // Cor padrão (cinza claro)
 	let resultTextColorClass = "text-gray-300"; // Cor padrão do texto (cinza claro)
+
+	const [showAllGuesses, setShowAllGuesses] = useState(false);
+	const [allGuesses, setAllGuesses] = useState<GuessWithProfile[]>([]); // Estado para armazenar todos os palpites
+	const [isLoadingAllGuesses, setIsLoadingAllGuesses] = useState(false);
+	const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+	useEffect(() => {
+		const fetchUser = async () => {
+			const {
+				data: { user },
+			} = await supabase.auth.getUser();
+			setCurrentUserId(user?.id || null);
+		};
+		fetchUser();
+
+		if (showAllGuesses && allGuesses.length === 0 && !isLoadingAllGuesses) {
+			const fetchAllGuesses = async () => {
+				setIsLoadingAllGuesses(true);
+				try {
+					const { data, error } = await supabase
+						.from("guesses")
+						.select(`
+							*,
+							profiles(name, avatar_url)
+						`)
+						.eq("game_id", game.id)
+						.order("created_at", { ascending: false });
+
+					if (error) {
+						throw error;
+					}
+					setAllGuesses(data || []);
+				} catch (error) {
+					console.error("Erro ao carregar todos os palpites:", error);
+				} finally {
+					setIsLoadingAllGuesses(false);
+				}
+			};
+			fetchAllGuesses();
+		}
+	}, [
+		showAllGuesses,
+		allGuesses.length,
+		isLoadingAllGuesses,
+		game.id,
+		supabase,
+	]);
 
 	if (userGuess && game.home_score !== null && game.away_score !== null) {
 		const homeActual = game.home_score;
@@ -42,7 +97,6 @@ export function GameCard({ game, userGuess, onGuess }: GameCardProps) {
 
 		// Acertou o placar exato
 		if (homeGuess === homeActual && awayGuess === awayActual) {
-			resultColorClass = "bg-gray-100"; // Verde muito fraco
 			resultTextColorClass = "text-emerald-200"; // Verde mais escuro
 		} // Acertou o vencedor
 		else if (
@@ -50,11 +104,9 @@ export function GameCard({ game, userGuess, onGuess }: GameCardProps) {
 			(didGuessAwayWin && didAwayWin) ||
 			(didGuessDraw && didDraw)
 		) {
-			resultColorClass = "bg-gray-100"; // Amarelo muito fraco
 			resultTextColorClass = "text-amber-200"; // Amarelo mais escuro
 		} // Errou tudo
 		else {
-			resultColorClass = "bg-gray-100"; // Vermelho muito fraco
 			resultTextColorClass = "text-red-200"; // Vermelho mais escuro
 		}
 	}
@@ -64,108 +116,265 @@ export function GameCard({ game, userGuess, onGuess }: GameCardProps) {
 	};
 
 	return (
-		<div className="px-20 relative">
-			{!!userGuess && (
-				<>
-					<div className={`absolute inset-0 rounded-xl ${resultColorClass}`} />
-
-					<div
-						className={`absolute left-3 top-1/2 -translate-y-1/2 text-8xl font-bold ${resultTextColorClass}`}
-					>
-						{userGuess.home_guess}
-					</div>
-					<div
-						className={`absolute right-3 top-1/2 -translate-y-1/2 text-8xl font-bold ${resultTextColorClass}`}
-					>
-						{userGuess.away_guess}
-					</div>
-				</>
-			)}
-
-			<div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-md border border-gray-200 relative z-[2]">
-				<div className="flex-1 flex items-center gap-2">
-					<div className="relative w-12 h-12 flex items-center justify-center">
-						<Image
-							src={game.home_team.logo_url || "/placeholder.png"}
-							alt={game.home_team.name}
-							fill
-							className="object-contain p-1"
-							sizes="48px"
+		<div>
+			<div className="px-20 relative">
+				{!!userGuess && (
+					<>
+						<div
+							className={`absolute inset-0 rounded-xl ${resultColorClass}`}
 						/>
+
+						<div
+							className={`absolute left-3 top-1/2 -translate-y-1/2 text-8xl font-bold ${resultTextColorClass}`}
+						>
+							{userGuess.home_guess}
+						</div>
+						<div
+							className={`absolute right-3 top-1/2 -translate-y-1/2 text-8xl font-bold ${resultTextColorClass}`}
+						>
+							{userGuess.away_guess}
+						</div>
+					</>
+				)}
+
+				<div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-md border border-gray-200 relative z-[2]">
+					<div className="flex-1 flex items-center gap-2">
+						<div className="relative w-12 h-12 flex items-center justify-center">
+							<Image
+								src={game.home_team.logo_url || "/placeholder.png"}
+								alt={game.home_team.name}
+								fill
+								className="object-contain p-1"
+								sizes="48px"
+							/>
+						</div>
+						<span className="font-medium text-gray-900">
+							{game.home_team.name}
+						</span>
 					</div>
-					<span className="font-medium text-gray-900">
-						{game.home_team.name}
-					</span>
+
+					<div className="flex flex-col items-center gap-2 mx-4">
+						<span className="text-gray-500 font-bold">Placar</span>
+						<div className="flex items-center gap-1">
+							<div className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-md border border-gray-200">
+								<span
+									className={
+										checkValue(game.home_score)
+											? "text-gray-900 font-bold"
+											: "text-gray-600"
+									}
+								>
+									{checkValue(game.home_score) ? game.home_score : "-"}
+								</span>
+							</div>
+							<span className="text-gray-400 mx-2">x</span>
+							<div className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-md border border-gray-200">
+								<span
+									className={
+										checkValue(game.away_score)
+											? "text-gray-900 font-bold"
+											: "text-gray-600"
+									}
+								>
+									{checkValue(game.away_score) ? game.away_score : "-"}
+								</span>
+							</div>
+						</div>
+						<span className="text-xs text-gray-400 mt-1 font-bold">
+							{new Date(game.game_time).toLocaleTimeString("pt-BR", {
+								hour: "2-digit",
+								minute: "2-digit",
+							})}
+						</span>
+					</div>
+
+					<div className="flex-1 flex items-center justify-end gap-2">
+						<span className="font-medium text-gray-900">
+							{game.away_team.name}
+						</span>
+						<div className="relative w-12 h-12 flex items-center justify-center">
+							<Image
+								src={game.away_team.logo_url || "/placeholder.png"}
+								alt={game.away_team.name}
+								fill
+								className="object-contain p-1"
+								sizes="48px"
+							/>
+						</div>
+					</div>
 				</div>
 
-				<div className="flex flex-col items-center gap-2 mx-4">
-					<span className="text-gray-500 font-bold">Placar</span>
-					<div className="flex items-center gap-1">
-						<div className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-md border border-gray-200">
-							<span
-								className={
-									checkValue(game.home_score)
-										? "text-gray-900 font-bold"
-										: "text-gray-600"
-								}
-							>
-								{checkValue(game.home_score) ? game.home_score : "-"}
-							</span>
-						</div>
-						<span className="text-gray-400 mx-2">x</span>
-						<div className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-md border border-gray-200">
-							<span
-								className={
-									checkValue(game.away_score)
-										? "text-gray-900 font-bold"
-										: "text-gray-600"
-								}
-							>
-								{checkValue(game.away_score) ? game.away_score : "-"}
-							</span>
-						</div>
+				{!userGuess && (
+					<div className="absolute right-[38px] top-0 h-full">
+						<Button
+							onClick={() => onGuess(game.id)}
+							variant="secondary"
+							title={isPredictionClosed ? "Palpites encerrados" : "Palpitar"}
+							className={`bg-emerald-500 text-white font-medium h-full ${isPredictionClosed ? "opacity-50 bg-gray-500 cursor-not-allowed" : "hover:bg-emerald-600 cursor-pointer"}`}
+							disabled={isPredictionClosed}
+						>
+							{isPredictionClosed ? (
+								<Ban className="left-[6px] relative" />
+							) : (
+								<DiamondPlus className="left-[6px] relative" />
+							)}
+						</Button>
 					</div>
-					<span className="text-xs text-gray-400 mt-1 font-bold">
-						{new Date(game.game_time).toLocaleTimeString("pt-BR", {
-							hour: "2-digit",
-							minute: "2-digit",
-						})}
-					</span>
-				</div>
-
-				<div className="flex-1 flex items-center justify-end gap-2">
-					<span className="font-medium text-gray-900">
-						{game.away_team.name}
-					</span>
-					<div className="relative w-12 h-12 flex items-center justify-center">
-						<Image
-							src={game.away_team.logo_url || "/placeholder.png"}
-							alt={game.away_team.name}
-							fill
-							className="object-contain p-1"
-							sizes="48px"
-						/>
-					</div>
-				</div>
+				)}
 			</div>
 
-			{!userGuess && (
-				<div className="absolute right-[38px] top-0 h-full">
-					<Button
-						onClick={() => onGuess(game.id)}
-						variant="secondary"
-						title={isPredictionClosed ? "Palpites encerrados" : "Palpitar"}
-						className={`bg-emerald-500 hover:bg-emerald-600 text-white font-medium h-full ${isPredictionClosed ? "opacity-50 bg-gray-500 cursor-not-allowed" : "cursor-pointer"}`}
-						disabled={isPredictionClosed}
-					>
-						{isPredictionClosed ? (
-							<Ban className="left-[6px] relative" />
-						) : (
-							<DiamondPlus className="left-[6px] relative" />
+			<button
+				type="button"
+				onClick={() => setShowAllGuesses(!showAllGuesses)}
+				className="text-gray-500 text-xs hover:text-gray-700 flex items-center justify-center mx-auto bg-white my-0 px-4 py-1 shadow-sm rounded-full mt-2 cursor-pointer"
+			>
+				{showAllGuesses ? "Mostrar menos" : "Mostrar todos os palpites"}
+				{showAllGuesses ? (
+					<ChevronUp className="ml-1 h-4 w-4" />
+				) : (
+					<ChevronDown className="ml-1 h-4 w-4" />
+				)}
+			</button>
+
+			<div className="mt-2 text-center">
+				<div
+					className={`overflow-hidden transition-all duration-300 ease-in-out ${showAllGuesses ? "max-h-96 opacity-100" : "max-h-0 opacity-0"}`}
+				>
+					{isLoadingAllGuesses && (
+						<div className="text-gray-500 text-sm">Carregando palpites...</div>
+					)}
+					{!isLoadingAllGuesses &&
+						allGuesses.length === 0 &&
+						showAllGuesses && (
+							<div className="text-gray-500 text-sm">
+								Nenhum outro palpite para este jogo.
+							</div>
 						)}
-					</Button>
+					{!isLoadingAllGuesses && allGuesses.length > 0 && showAllGuesses && (
+						<div className="w-[60%] mx-auto">
+							<ul className="space-y-2 pb-2">
+								{allGuesses
+									.filter(
+										(guess: GuessWithProfile) =>
+											guess.user_id !== currentUserId,
+									)
+									.map((guess: GuessWithProfile) => {
+										let winningTeamLogoUrl: string | null = null;
+										let winningTeamName: string | null = null;
+										let isDrawGuess = false;
+
+										if (guess.home_guess > guess.away_guess) {
+											winningTeamLogoUrl = game.home_team.logo_url;
+											winningTeamName = game.home_team.name;
+										} else if (guess.away_guess > guess.home_guess) {
+											winningTeamLogoUrl = game.away_team.logo_url;
+											winningTeamName = game.away_team.name;
+										} else {
+											// Palpite de empate
+											isDrawGuess = true;
+										}
+
+										let guessCardBgColor = "bg-gray-100";
+										let cardShadowClass = "shadow-sm";
+										let cardBorderClass = "border border-gray-200";
+
+										if (game.home_score !== null && game.away_score !== null) {
+											const homeActual = game.home_score;
+											const awayActual = game.away_score;
+											const homeGuess = guess.home_guess;
+											const awayGuess = guess.away_guess;
+
+											const didGuessHomeWin = homeGuess > awayGuess;
+											const didGuessAwayWin = awayGuess > homeGuess;
+											const didGuessDraw = homeGuess === awayGuess;
+
+											const didHomeWin = homeActual > awayActual;
+											const didAwayWin = awayActual > homeActual;
+											const didDraw = homeActual === awayActual;
+
+											// Acertou o placar exato
+											if (
+												homeGuess === homeActual &&
+												awayGuess === awayActual
+											) {
+												guessCardBgColor = "bg-green-100/40"; // Verde com 40% de opacidade
+												cardShadowClass = ""; // Sem sombra
+												cardBorderClass = "border border-green-500"; // Borda verde forte
+											} // Acertou o vencedor
+											else if (
+												(didGuessHomeWin && didHomeWin) ||
+												(didGuessAwayWin && didAwayWin) ||
+												(didGuessDraw && didDraw)
+											) {
+												guessCardBgColor = "bg-yellow-100/40"; // Amarelo com 40% de opacidade
+												cardShadowClass = ""; // Sem sombra
+												cardBorderClass = "border border-yellow-500"; // Borda amarela forte
+											} // Errou tudo
+											else {
+												guessCardBgColor = "bg-red-100/40"; // Vermelho com 40% de opacidade
+												cardShadowClass = ""; // Sem sombra
+												cardBorderClass = "border border-red-500"; // Borda vermelha forte
+											}
+										}
+
+										return (
+											<li
+												key={guess.id}
+												className={`flex justify-between items-center text-sm text-gray-700 py-1 ${guessCardBgColor} p-3 rounded-lg ${cardShadowClass} ${cardBorderClass}`}
+											>
+												<div className="flex-1 flex items-center">
+													<div className="relative w-6 h-6 flex-shrink-0">
+														{isDrawGuess ? (
+															<div className="w-full h-full rounded-full bg-gray-200 flex items-center justify-center text-gray-700 font-bold text-xs">
+																E
+															</div>
+														) : (
+															winningTeamLogoUrl && (
+																<Image
+																	src={winningTeamLogoUrl}
+																	alt={winningTeamName || "Time vencedor"}
+																	fill
+																	className="object-contain"
+																/>
+															)
+														)}
+													</div>
+												</div>
+
+												<div className="flex items-center gap-1 flex-grow justify-center">
+													<div className="w-6 h-6 flex items-center justify-center bg-gray-100 rounded-md border border-gray-200">
+														<span className="text-gray-900 font-bold">
+															{guess.home_guess}
+														</span>
+													</div>
+													<span className="text-gray-400 mx-1">x</span>
+													<div className="w-6 h-6 flex items-center justify-center bg-gray-100 rounded-md border border-gray-200">
+														<span className="text-gray-900 font-bold">
+															{guess.away_guess}
+														</span>
+													</div>
+												</div>
+
+												<div className="flex-1 flex items-center justify-end gap-1">
+													<span>{guess.profiles?.name || "Anônimo"}</span>
+													{guess.profiles?.avatar_url && (
+														<Image
+															src={guess.profiles.avatar_url}
+															alt={guess.profiles.name || "User Avatar"}
+															width={20}
+															height={20}
+															className="rounded-full"
+														/>
+													)}
+												</div>
+											</li>
+										);
+									})}
+							</ul>
+						</div>
+					)}
 				</div>
-			)}
+			</div>
 		</div>
 	);
 }
