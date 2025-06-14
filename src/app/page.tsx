@@ -2,12 +2,14 @@
 
 import { GameList } from "@/components/games/game-list";
 import { LeaderboardTable } from "@/components/leaderboard/leaderboard-table";
+import { BrazilianTeamBet } from "@/components/predictions/brazilian-team-bet";
 import { PredictionModal } from "@/components/predictions/prediction-modal";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase-client";
 import { Database } from "@/types/supabase";
 import { User } from "@supabase/supabase-js";
 import { LogOut } from "lucide-react";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -159,17 +161,43 @@ export default function HomePage() {
 			<header className="bg-white shadow-sm border-b border-gray-200">
 				<div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
 					<h1 className="text-2xl font-bold text-gray-900">Palp.it</h1>
-					<Button
-						onClick={handleSignOut}
-						variant="destructive"
-						className="py-2 px-4 text-lg text-gray-900 font-bold"
-					>
-						<LogOut />
-					</Button>
+					<div className="flex items-center gap-4">
+						{currentUser && (
+							<div className="flex items-center gap-2">
+								<div className="relative w-8 h-8">
+									{currentUser.user_metadata.avatar_url ? (
+										<Image
+											src={currentUser.user_metadata.avatar_url}
+											alt={currentUser.user_metadata.name || "Avatar"}
+											fill
+											className="rounded-full object-cover"
+										/>
+									) : (
+										<div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+											<span className="text-gray-500 text-sm">
+												{currentUser.user_metadata.name?.[0]?.toUpperCase() || "?"}
+											</span>
+										</div>
+									)}
+								</div>
+								<span className="text-gray-900 font-medium">
+									{currentUser.user_metadata.name || "Usuário"}
+								</span>
+							</div>
+						)}
+						<Button
+							onClick={handleSignOut}
+							variant="destructive"
+							className="py-2 px-4 text-lg text-gray-900 font-bold"
+						>
+							<LogOut />
+						</Button>
+					</div>
 				</div>
 			</header>
 
-			<main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 pb-28">
+			<main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 min-h-dvh">
+				<BrazilianTeamBet currentUserId={currentUser?.id ?? null} />
 				<GameList
 					games={games}
 					userGuesses={userGuesses}
@@ -181,7 +209,7 @@ export default function HomePage() {
 				<LeaderboardTable />
 			</main>
 
-			<footer className="bg-white shadow-sm border-t border-gray-200 fixed bottom-0 w-full">
+			<footer className="bg-white shadow-sm border-t border-gray-200 w-full z-[4] py-4">
 				<div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
 					<p className="text-sm text-gray-600">© 2024 Palp.it - Todos os direitos reservados</p>
 					<p className="text-sm text-gray-600">O palmeiras não tem mundial! 🏆</p>
