@@ -1,4 +1,5 @@
 import { Tables } from "@/types/supabase";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { GameCard } from "./game-card";
 import { GameHeader } from "./game-header";
@@ -10,8 +11,6 @@ interface GameListProps {
 	})[];
 	userGuesses: Record<string, { home_guess: number; away_guess: number }>;
 	onGuess: (gameId: string) => void;
-	currentDate: Date;
-	onDateChange: (newDate: Date) => void;
 	currentUserId: string | null;
 }
 
@@ -19,11 +18,32 @@ export function GameList({
 	games,
 	userGuesses,
 	onGuess,
-	currentDate,
-	onDateChange,
 	currentUserId,
 }: GameListProps) {
+	const searchParams = useSearchParams();
+	const router = useRouter();
+
 	const [filteredGames, setFilteredGames] = useState(games);
+
+	const [currentDate, setCurrentDate] = useState<Date>(() => {
+		const dateParam = searchParams.get("date");
+		if (dateParam) {
+			// Tenta parsear a data do query param
+			const date = new Date(dateParam);
+			// Valida se a data é válida
+			if (!Number.isNaN(date.getTime())) {
+				return date;
+			}
+		}
+		return new Date(); // Retorna a data atual se não houver param ou for inválido
+	});
+
+	const handleDateChange = (newDate: Date) => {
+		setCurrentDate(newDate);
+		const newSearchParams = new URLSearchParams(searchParams.toString());
+		newSearchParams.set("date", newDate.toISOString().split("T")[0]); // Salva a data como YYYY-MM-DD
+		router.push(`?${newSearchParams.toString()}`);
+	};
 
 	useEffect(() => {
 		const startOfDay = new Date(currentDate);
@@ -57,13 +77,13 @@ export function GameList({
 	const handlePreviousDay = () => {
 		const newDate = new Date(currentDate);
 		newDate.setDate(newDate.getDate() - 1);
-		onDateChange(newDate);
+		handleDateChange(newDate);
 	};
 
 	const handleNextDay = () => {
 		const newDate = new Date(currentDate);
 		newDate.setDate(newDate.getDate() + 1);
-		onDateChange(newDate);
+		handleDateChange(newDate);
 	};
 
 	return (

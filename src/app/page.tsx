@@ -10,8 +10,8 @@ import { Database } from "@/types/supabase";
 import { User } from "@supabase/supabase-js";
 import { LogOut } from "lucide-react";
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 
 type GameWithTeams = Database["public"]["Tables"]["games"]["Row"] & {
 	home_team: Database["public"]["Tables"]["teams"]["Row"];
@@ -25,7 +25,6 @@ type UserGuess = {
 
 export default function HomePage() {
 	const router = useRouter();
-	const searchParams = useSearchParams();
 
 	const [games, setGames] = useState<GameWithTeams[]>([]);
 	const [userGuesses, setUserGuesses] = useState<Record<string, UserGuess>>({});
@@ -33,19 +32,6 @@ export default function HomePage() {
 	const [selectedGame, setSelectedGame] = useState<GameWithTeams | null>(null);
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [currentUser, setCurrentUser] = useState<User | null>(null);
-
-	const [currentDate, setCurrentDate] = useState<Date>(() => {
-		const dateParam = searchParams.get("date");
-		if (dateParam) {
-			// Tenta parsear a data do query param
-			const date = new Date(dateParam);
-			// Valida se a data é válida
-			if (!Number.isNaN(date.getTime())) {
-				return date;
-			}
-		}
-		return new Date(); // Retorna a data atual se não houver param ou for inválido
-	});
 
 	useEffect(() => {
 		const loadData = async () => {
@@ -103,7 +89,7 @@ export default function HomePage() {
 		};
 
 		loadData();
-	}, []);
+	}, [router]);
 
 	const handleGuess = (gameId: string) => {
 		const game = games.find((g) => g.id === gameId);
@@ -129,13 +115,6 @@ export default function HomePage() {
 			},
 		}));
 		router.refresh();
-	};
-
-	const handleDateChange = (newDate: Date) => {
-		setCurrentDate(newDate);
-		const newSearchParams = new URLSearchParams(searchParams.toString());
-		newSearchParams.set("date", newDate.toISOString().split("T")[0]); // Salva a data como YYYY-MM-DD
-		router.push(`?${newSearchParams.toString()}`);
 	};
 
 	const handleSignOut = async () => {
@@ -175,7 +154,8 @@ export default function HomePage() {
 									) : (
 										<div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
 											<span className="text-gray-500 text-sm">
-												{currentUser.user_metadata.name?.[0]?.toUpperCase() || "?"}
+												{currentUser.user_metadata.name?.[0]?.toUpperCase() ||
+													"?"}
 											</span>
 										</div>
 									)}
@@ -198,21 +178,25 @@ export default function HomePage() {
 
 			<main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 min-h-dvh">
 				<BrazilianTeamBet currentUserId={currentUser?.id ?? null} />
-				<GameList
-					games={games}
-					userGuesses={userGuesses}
-					onGuess={handleGuess}
-					currentDate={currentDate}
-					onDateChange={handleDateChange}
-					currentUserId={currentUser?.id ?? null}
-				/>
+				<Suspense fallback={<div>Carregando params...</div>}>
+					<GameList
+						games={games}
+						userGuesses={userGuesses}
+						onGuess={handleGuess}
+						currentUserId={currentUser?.id ?? null}
+					/>
+				</Suspense>
 				<LeaderboardTable />
 			</main>
 
 			<footer className="bg-white shadow-sm border-t border-gray-200 w-full z-[4] py-4">
 				<div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-					<p className="text-sm text-gray-600">© 2024 Palp.it - Todos os direitos reservados</p>
-					<p className="text-sm text-gray-600">O palmeiras não tem mundial! 🏆</p>
+					<p className="text-sm text-gray-600">
+						© 2024 Palp.it - Todos os direitos reservados
+					</p>
+					<p className="text-sm text-gray-600">
+						O palmeiras não tem mundial! 🏆
+					</p>
 				</div>
 			</footer>
 
