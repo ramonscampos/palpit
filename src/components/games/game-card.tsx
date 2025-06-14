@@ -364,9 +364,9 @@ export function GameCard({
 										return (
 											<li
 												key={guess.id}
-												className={`flex justify-between items-center text-sm text-gray-700 py-1 ${guessCardBgColor} p-3 rounded-lg ${cardShadowClass} ${cardBorderClass}`}
+												className={`flex justify-between items-center text-sm text-gray-700 py-1 ${guessCardBgColor} p-3 rounded-lg ${cardShadowClass} ${cardBorderClass} gap-4`}
 											>
-												<div className="flex-1 flex items-center">
+												<div className="flex items-center">
 													<div className="relative w-6 h-6 flex-shrink-0">
 														{isDrawGuess ? (
 															<div className="w-full h-full rounded-full bg-gray-200 flex items-center justify-center text-gray-700 font-bold text-xs">
@@ -400,10 +400,7 @@ export function GameCard({
 												</div>
 
 												<div className="flex-1 flex items-center justify-end gap-1">
-													<span className={guess.user_id === currentUserId ? "font-bold" : ""}>
-														{guess.user_id === currentUserId && (
-															<span className="text-xs text-gray-500 mr-1">(você)</span>
-														)}
+													<span className={guess.user_id === currentUserId ? "font-bold text-right" : "text-right"}>
 														{formatDisplayName(guess.profiles?.name)}
 													</span>
 													{guess.profiles?.avatar_url && (
