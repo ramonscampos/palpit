@@ -125,31 +125,30 @@ export function LeaderboardTable() {
             <tr>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className="w-12 px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
               >
-                Posição
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
               >
                 Usuário
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className="w-24 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
               >
                 Acertos de Placar
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className="w-24 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
               >
                 Acertos de Vencedor
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className="w-20 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
               >
                 Pontuação
               </th>
@@ -158,10 +157,10 @@ export function LeaderboardTable() {
           <tbody className="bg-white divide-y divide-gray-200 font-bold">
             {leaderboard.map((entry, index) => (
               <tr key={entry.profile.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <td className="w-12 px-2 py-4 whitespace-nowrap text-xl font-bold text-gray-500">
                   {index + 1}º
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-6 pl-2 md:pl-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     <div className="flex-shrink-0 h-10 w-10 relative">
                       {entry.profile.avatar_url ? (

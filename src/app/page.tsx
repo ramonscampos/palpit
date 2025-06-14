@@ -190,7 +190,7 @@ export default function HomePage() {
 			</main>
 
 			<footer className="bg-white shadow-sm border-t border-gray-200 w-full z-[4] py-4">
-				<div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+				<div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center flex-col md:flex-row gap-2">
 					<p className="text-sm text-gray-600">
 						© 2024 Palp.it - Todos os direitos reservados
 					</p>

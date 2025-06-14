@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase-client";
+import { cn } from "@/lib/utils";
 import { Tables } from "@/types/supabase";
 import { Ban, ChevronDown, ChevronUp, DiamondPlus } from "lucide-react";
 import Image from "next/image";
@@ -22,8 +23,12 @@ interface GameCardProps {
 	currentUserId: string | null;
 }
 
-export function GameCard({ game, userGuess, onGuess, currentUserId }: GameCardProps) {
-
+export function GameCard({
+	game,
+	userGuess,
+	onGuess,
+	currentUserId,
+}: GameCardProps) {
 	const gameTime = new Date(game.game_time);
 	const currentTime = new Date();
 	const timeDifference = gameTime.getTime() - currentTime.getTime(); // Diferença em milissegundos
@@ -64,12 +69,7 @@ export function GameCard({ game, userGuess, onGuess, currentUserId }: GameCardPr
 			};
 			fetchAllGuesses();
 		}
-	}, [
-		showAllGuesses,
-		allGuesses.length,
-		isLoadingAllGuesses,
-		game.id,
-	]);
+	}, [showAllGuesses, allGuesses.length, isLoadingAllGuesses, game.id]);
 
 	if (userGuess && game.home_score !== null && game.away_score !== null) {
 		const homeActual = game.home_score;
@@ -105,11 +105,32 @@ export function GameCard({ game, userGuess, onGuess, currentUserId }: GameCardPr
 		return value !== null && value !== undefined;
 	};
 
+	function formatDisplayName(fullName?: string | null) {
+		if (!fullName) return ''
+
+		const prepositions = ['de', 'da', 'do', 'dos', 'das']
+		const parts = fullName.trim().split(/\s+/)
+	  
+		if (parts.length === 0) return ''
+	  
+		// Se o segundo nome for uma preposição, inclui o terceiro
+		if (prepositions.includes(parts[1]?.toLowerCase())) {
+		  return parts.slice(0, 3).join(' ')
+		}
+	  
+		// Caso contrário, pega só os dois primeiros
+		return parts.slice(0, 2).join(' ')
+	  }
+
 	const hasGuessed = !!userGuess;
 	const isGameFinished = game.home_score !== null && game.away_score !== null;
 	const canGuess = !isGameFinished;
 
-	const calculateResult = (): 'correct_score' | 'correct_winner' | 'incorrect' | 'no_guess' => {
+	const calculateResult = ():
+		| "correct_score"
+		| "correct_winner"
+		| "incorrect"
+		| "no_guess" => {
 		if (userGuess && game.home_score !== null && game.away_score !== null) {
 			const homeActual = game.home_score;
 			const awayActual = game.away_score;
@@ -126,25 +147,25 @@ export function GameCard({ game, userGuess, onGuess, currentUserId }: GameCardPr
 
 			// Acertou o placar exato
 			if (homeGuess === homeActual && awayGuess === awayActual) {
-				return 'correct_score';
+				return "correct_score";
 			} // Acertou o vencedor
-			else if (
+
+			if (
 				(didGuessHomeWin && didHomeWin) ||
 				(didGuessAwayWin && didAwayWin) ||
 				(didGuessDraw && didDraw)
 			) {
-				return 'correct_winner';
+				return "correct_winner";
 			} // Errou tudo
-			else {
-				return 'incorrect';
-			}
+
+			return "incorrect";
 		}
-		return 'no_guess';
+		return "no_guess";
 	};
 
 	return (
 		<div>
-			<div className="px-20 relative">
+			<div className="px-12 md:px-20 relative">
 				{!!userGuess && (
 					<>
 						<div
@@ -152,19 +173,19 @@ export function GameCard({ game, userGuess, onGuess, currentUserId }: GameCardPr
 						/>
 
 						<div
-							className={`absolute left-3 top-1/2 -translate-y-1/2 text-8xl font-bold ${resultTextColorClass}`}
+							className={`absolute left-3 top-1/2 -translate-y-1/2 text-5xl md:text-8xl font-bold ${resultTextColorClass}`}
 						>
 							{userGuess.home_guess}
 						</div>
 						<div
-							className={`absolute right-3 top-1/2 -translate-y-1/2 text-8xl font-bold ${resultTextColorClass}`}
+							className={`absolute right-3 top-1/2 -translate-y-1/2 text-5xl md:text-8xl font-bold ${resultTextColorClass}`}
 						>
 							{userGuess.away_guess}
 						</div>
 					</>
 				)}
 
-				<div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-md border border-gray-200 relative z-[2]">
+				<div className={cn("flex items-center justify-between p-4 bg-white rounded-lg shadow-md border border-gray-200 relative z-[2] md:ml-0 md:w-full md:pl-4", !userGuess && "pl-[46px] w-[calc(100%_+_46px)] -ml-[46px]")}>
 					<div className="flex-1 flex items-center gap-2">
 						<div className="relative w-12 h-12 flex items-center justify-center">
 							<Image
@@ -175,21 +196,21 @@ export function GameCard({ game, userGuess, onGuess, currentUserId }: GameCardPr
 								sizes="48px"
 							/>
 						</div>
-						<span className="font-medium text-gray-900">
+						<span className="hidden sm:block font-medium text-gray-900">
 							{game.home_team.name}
 						</span>
 					</div>
 
-					<div className="flex flex-col items-center gap-2 mx-4">
-						<span className="text-gray-500 font-bold">Placar</span>
+					<div className="flex flex-col items-center gap-2 mx-2 md:mx-4">
+						<span className="text-xs sm:text-sm text-gray-500 font-bold">Placar</span>
 						<div className="flex items-center gap-1">
 							<div className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-md border border-gray-200">
 								<span
-									className={
+									className={`text-sm sm:text-base ${
 										checkValue(game.home_score)
 											? "text-gray-900 font-bold"
 											: "text-gray-600"
-									}
+									}`}
 								>
 									{checkValue(game.home_score) ? game.home_score : "-"}
 								</span>
@@ -197,17 +218,17 @@ export function GameCard({ game, userGuess, onGuess, currentUserId }: GameCardPr
 							<span className="text-gray-400 mx-2">x</span>
 							<div className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-md border border-gray-200">
 								<span
-									className={
+									className={`text-sm sm:text-base ${
 										checkValue(game.away_score)
 											? "text-gray-900 font-bold"
 											: "text-gray-600"
-									}
+									}`}
 								>
 									{checkValue(game.away_score) ? game.away_score : "-"}
 								</span>
 							</div>
 						</div>
-						<span className="text-xs text-gray-400 mt-1 font-bold">
+						<span className="text-[10px] sm:text-xs text-gray-400 mt-1 font-bold">
 							{new Date(game.game_time).toLocaleTimeString("pt-BR", {
 								hour: "2-digit",
 								minute: "2-digit",
@@ -216,7 +237,7 @@ export function GameCard({ game, userGuess, onGuess, currentUserId }: GameCardPr
 					</div>
 
 					<div className="flex-1 flex items-center justify-end gap-2">
-						<span className="font-medium text-gray-900">
+						<span className="hidden sm:block font-medium text-gray-900">
 							{game.away_team.name}
 						</span>
 						<div className="relative w-12 h-12 flex items-center justify-center">
@@ -232,7 +253,7 @@ export function GameCard({ game, userGuess, onGuess, currentUserId }: GameCardPr
 				</div>
 
 				{!userGuess && (
-					<div className="absolute right-[38px] top-0 h-full">
+					<div className="absolute right-[6px] md:right-[38px] top-0 h-full">
 						<Button
 							onClick={() => onGuess(game.id)}
 							variant="secondary"
@@ -278,7 +299,7 @@ export function GameCard({ game, userGuess, onGuess, currentUserId }: GameCardPr
 							</div>
 						)}
 					{!isLoadingAllGuesses && allGuesses.length > 0 && showAllGuesses && (
-						<div className="w-[60%] mx-auto">
+						<div className="w-[90%] md:w-[60%] mx-auto">
 							<ul className="space-y-2 pb-2">
 								{allGuesses
 									.filter(
@@ -296,7 +317,8 @@ export function GameCard({ game, userGuess, onGuess, currentUserId }: GameCardPr
 										} else if (guess.away_guess > guess.home_guess) {
 											winningTeamLogoUrl = game.away_team.logo_url;
 											winningTeamName = game.away_team.name;
-										} else { // Palpite de empate
+										} else {
+											// Palpite de empate
 											isDrawGuess = true;
 										}
 
@@ -319,7 +341,10 @@ export function GameCard({ game, userGuess, onGuess, currentUserId }: GameCardPr
 											const didDraw = homeActual === awayActual;
 
 											// Acertou o placar exato
-											if (homeGuess === homeActual && awayGuess === awayActual) {
+											if (
+												homeGuess === homeActual &&
+												awayGuess === awayActual
+											) {
 												guessCardBgColor = "bg-green-100/40"; // Verde com 40% de opacidade
 												cardShadowClass = ""; // Sem sombra
 												cardBorderClass = "border border-green-500"; // Borda verde forte
@@ -364,7 +389,7 @@ export function GameCard({ game, userGuess, onGuess, currentUserId }: GameCardPr
 													</div>
 												</div>
 
-												<div className="flex items-center gap-1 flex-grow justify-center">
+												<div className="flex items-center gap-1 justify-center">
 													<div className="w-6 h-6 flex items-center justify-center bg-gray-100 rounded-md border border-gray-200">
 														<span className="text-gray-900 font-bold">
 															{guess.home_guess}
@@ -379,7 +404,7 @@ export function GameCard({ game, userGuess, onGuess, currentUserId }: GameCardPr
 												</div>
 
 												<div className="flex-1 flex items-center justify-end gap-1">
-													<span>{guess.profiles?.name || "Anônimo"}</span>
+													<span>{formatDisplayName(guess.profiles?.name)}</span>
 													{guess.profiles?.avatar_url && (
 														<Image
 															src={guess.profiles.avatar_url}
