@@ -181,6 +181,13 @@ export default function HomePage() {
 				<LeaderboardTable />
 			</main>
 
+			<footer className="bg-white shadow-sm border-t border-gray-200 fixed bottom-0 w-full">
+				<div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+					<p className="text-sm text-gray-600">© 2024 Palp.it - Todos os direitos reservados</p>
+					<p className="text-sm text-gray-600">O palmeiras não tem mundial! 🏆</p>
+				</div>
+			</footer>
+
 			<PredictionModal
 				isOpen={isModalOpen}
 				onClose={handleCloseModal}
