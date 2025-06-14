@@ -21,16 +21,62 @@ export function GameCard({ game, userGuess, onGuess }: GameCardProps) {
 	const timeDifference = gameTime.getTime() - currentTime.getTime(); // Diferença em milissegundos
 	const isPredictionClosed = timeDifference <= 60 * 60 * 1000; // 60 minutos em milissegundos
 
+	const hasActualScore = game.home_score !== null && game.away_score !== null;
+
+	let resultColorClass = "bg-gray-100"; // Cor padrão (cinza claro)
+	let resultTextColorClass = "text-gray-300"; // Cor padrão do texto (cinza claro)
+
+	if (userGuess && game.home_score !== null && game.away_score !== null) {
+		const homeActual = game.home_score;
+		const awayActual = game.away_score;
+		const homeGuess = userGuess.home_guess;
+		const awayGuess = userGuess.away_guess;
+
+		const didGuessHomeWin = homeGuess > awayGuess;
+		const didGuessAwayWin = awayGuess > homeGuess;
+		const didGuessDraw = homeGuess === awayGuess;
+
+		const didHomeWin = homeActual > awayActual;
+		const didAwayWin = awayActual > homeActual;
+		const didDraw = homeActual === awayActual;
+
+		// Acertou o placar exato
+		if (homeGuess === homeActual && awayGuess === awayActual) {
+			resultColorClass = "bg-gray-100"; // Verde muito fraco
+			resultTextColorClass = "text-emerald-200"; // Verde mais escuro
+		} // Acertou o vencedor
+		else if (
+			(didGuessHomeWin && didHomeWin) ||
+			(didGuessAwayWin && didAwayWin) ||
+			(didGuessDraw && didDraw)
+		) {
+			resultColorClass = "bg-gray-100"; // Amarelo muito fraco
+			resultTextColorClass = "text-amber-200"; // Amarelo mais escuro
+		} // Errou tudo
+		else {
+			resultColorClass = "bg-gray-100"; // Vermelho muito fraco
+			resultTextColorClass = "text-red-200"; // Vermelho mais escuro
+		}
+	}
+
+	const checkValue = (value: number | null | undefined) => {
+		return value !== null && value !== undefined;
+	};
+
 	return (
 		<div className="px-20 relative">
 			{!!userGuess && (
 				<>
-					<div className="absolute inset-0 bg-gray-100 rounded-xl" />
+					<div className={`absolute inset-0 rounded-xl ${resultColorClass}`} />
 
-					<div className="absolute left-3 top-1/2 -translate-y-1/2 text-8xl font-bold text-gray-200">
+					<div
+						className={`absolute left-3 top-1/2 -translate-y-1/2 text-8xl font-bold ${resultTextColorClass}`}
+					>
 						{userGuess.home_guess}
 					</div>
-					<div className="absolute right-3 top-1/2 -translate-y-1/2 text-8xl font-bold text-gray-200">
+					<div
+						className={`absolute right-3 top-1/2 -translate-y-1/2 text-8xl font-bold ${resultTextColorClass}`}
+					>
 						{userGuess.away_guess}
 					</div>
 				</>
@@ -58,20 +104,24 @@ export function GameCard({ game, userGuess, onGuess }: GameCardProps) {
 						<div className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-md border border-gray-200">
 							<span
 								className={
-									game.away_score ? "text-gray-900 font-bold" : "text-gray-600"
+									checkValue(game.home_score)
+										? "text-gray-900 font-bold"
+										: "text-gray-600"
 								}
 							>
-								{game.home_score || "-"}
+								{checkValue(game.home_score) ? game.home_score : "-"}
 							</span>
 						</div>
-						<span className="text-gray-400">x</span>
+						<span className="text-gray-400 mx-2">x</span>
 						<div className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-md border border-gray-200">
 							<span
 								className={
-									game.away_score ? "text-gray-900 font-bold" : "text-gray-600"
+									checkValue(game.away_score)
+										? "text-gray-900 font-bold"
+										: "text-gray-600"
 								}
 							>
-								{game.away_score || "-"}
+								{checkValue(game.away_score) ? game.away_score : "-"}
 							</span>
 						</div>
 					</div>

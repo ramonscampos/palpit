@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Database } from "@/types/supabase";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { LogOut } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -162,7 +163,16 @@ export default function HomePage() {
 				throw error;
 			}
 
-			router.refresh(); // Recarrega os dados na página
+			// Atualiza o estado userGuesses localmente para feedback imediato
+			setUserGuesses((prevGuesses) => ({
+				...prevGuesses,
+				[selectedGame.id]: {
+					home_guess: Number(homeGuessInput),
+					away_guess: Number(awayGuessInput),
+				},
+			}));
+
+			router.refresh(); // Mantido para garantir a revalidação geral da página
 		} catch (error) {
 			console.error("Erro ao salvar palpite:", error);
 		} finally {
@@ -204,9 +214,9 @@ export default function HomePage() {
 					<Button
 						onClick={handleSignOut}
 						variant="destructive"
-						className="py-2 px-4 font-medium"
+						className="py-2 px-4 text-lg text-gray-900 font-bold"
 					>
-						Sair
+						<LogOut />
 					</Button>
 				</div>
 			</header>
