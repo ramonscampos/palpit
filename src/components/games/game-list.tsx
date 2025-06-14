@@ -10,10 +10,17 @@ interface GameListProps {
 	})[];
 	userGuesses: Record<string, { home_guess: number; away_guess: number }>;
 	onGuess: (gameId: string) => void;
+	currentDate: Date;
+	onDateChange: (newDate: Date) => void;
 }
 
-export function GameList({ games, userGuesses, onGuess }: GameListProps) {
-	const [currentDate, setCurrentDate] = useState(new Date());
+export function GameList({
+	games,
+	userGuesses,
+	onGuess,
+	currentDate,
+	onDateChange,
+}: GameListProps) {
 	const [filteredGames, setFilteredGames] = useState(games);
 
 	useEffect(() => {
@@ -33,24 +40,28 @@ export function GameList({ games, userGuesses, onGuess }: GameListProps) {
 
 	const hasPreviousDay = games.some((game) => {
 		const gameDate = new Date(game.game_time);
-		return gameDate < currentDate;
+		const startOfCurrentDate = new Date(currentDate);
+		startOfCurrentDate.setHours(0, 0, 0, 0);
+		return gameDate < startOfCurrentDate;
 	});
 
 	const hasNextDay = games.some((game) => {
 		const gameDate = new Date(game.game_time);
-		return gameDate > currentDate;
+		const endOfCurrentDate = new Date(currentDate);
+		endOfCurrentDate.setHours(23, 59, 59, 999);
+		return gameDate > endOfCurrentDate;
 	});
 
 	const handlePreviousDay = () => {
 		const newDate = new Date(currentDate);
 		newDate.setDate(newDate.getDate() - 1);
-		setCurrentDate(newDate);
+		onDateChange(newDate);
 	};
 
 	const handleNextDay = () => {
 		const newDate = new Date(currentDate);
 		newDate.setDate(newDate.getDate() + 1);
-		setCurrentDate(newDate);
+		onDateChange(newDate);
 	};
 
 	return (

@@ -1,5 +1,5 @@
 import { Tables } from "@/types/supabase";
-import { DiamondPlus } from "lucide-react";
+import { Ban, DiamondPlus } from "lucide-react";
 import Image from "next/image";
 import { Button } from "../ui/button";
 
@@ -16,6 +16,11 @@ interface GameCardProps {
 }
 
 export function GameCard({ game, userGuess, onGuess }: GameCardProps) {
+	const gameTime = new Date(game.game_time);
+	const currentTime = new Date();
+	const timeDifference = gameTime.getTime() - currentTime.getTime(); // Diferença em milissegundos
+	const isPredictionClosed = timeDifference <= 60 * 60 * 1000; // 60 minutos em milissegundos
+
 	return (
 		<div className="px-20 relative">
 			{!!userGuess && (
@@ -70,6 +75,12 @@ export function GameCard({ game, userGuess, onGuess }: GameCardProps) {
 							</span>
 						</div>
 					</div>
+					<span className="text-xs text-gray-400 mt-1 font-bold">
+						{new Date(game.game_time).toLocaleTimeString("pt-BR", {
+							hour: "2-digit",
+							minute: "2-digit",
+						})}
+					</span>
 				</div>
 
 				<div className="flex-1 flex items-center justify-end gap-2">
@@ -89,14 +100,19 @@ export function GameCard({ game, userGuess, onGuess }: GameCardProps) {
 			</div>
 
 			{!userGuess && (
-				<div className="absolute right-[38px] top-0 h-[98px]">
+				<div className="absolute right-[38px] top-0 h-full">
 					<Button
 						onClick={() => onGuess(game.id)}
 						variant="secondary"
-						title="Palpitar"
-						className="bg-emerald-500 hover:bg-emerald-600 text-white font-medium h-full cursor-pointer"
+						title={isPredictionClosed ? "Palpites encerrados" : "Palpitar"}
+						className={`bg-emerald-500 hover:bg-emerald-600 text-white font-medium h-full ${isPredictionClosed ? "opacity-50 bg-gray-500 cursor-not-allowed" : "cursor-pointer"}`}
+						disabled={isPredictionClosed}
 					>
-						<DiamondPlus className="left-[6px] relative" />
+						{isPredictionClosed ? (
+							<Ban className="left-[6px] relative" />
+						) : (
+							<DiamondPlus className="left-[6px] relative" />
+						)}
 					</Button>
 				</div>
 			)}

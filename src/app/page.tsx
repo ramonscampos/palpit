@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Database } from "@/types/supabase";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 type GameWithTeams = Database["public"]["Tables"]["games"]["Row"] & {
@@ -21,6 +21,8 @@ type UserGuess = {
 export default function HomePage() {
 	const supabase = createClientComponentClient<Database>();
 	const router = useRouter();
+	const searchParams = useSearchParams();
+
 	const [games, setGames] = useState<GameWithTeams[]>([]);
 	const [userGuesses, setUserGuesses] = useState<Record<string, UserGuess>>({});
 	const [loading, setLoading] = useState(true);
@@ -29,6 +31,19 @@ export default function HomePage() {
 	const [showConfirmation, setShowConfirmation] = useState(false);
 	const [homeGuessInput, setHomeGuessInput] = useState<number | "">("");
 	const [awayGuessInput, setAwayGuessInput] = useState<number | "">("");
+
+	const [currentDate, setCurrentDate] = useState<Date>(() => {
+		const dateParam = searchParams.get("date");
+		if (dateParam) {
+			// Tenta parsear a data do query param
+			const date = new Date(dateParam);
+			// Valida se a data é válida
+			if (!Number.isNaN(date.getTime())) {
+				return date;
+			}
+		}
+		return new Date(); // Retorna a data atual se não houver param ou for inválido
+	});
 
 	const isSaveDisabled = homeGuessInput === "" || awayGuessInput === "";
 
@@ -156,6 +171,13 @@ export default function HomePage() {
 		}
 	};
 
+	const handleDateChange = (newDate: Date) => {
+		setCurrentDate(newDate);
+		const newSearchParams = new URLSearchParams(searchParams.toString());
+		newSearchParams.set("date", newDate.toISOString().split("T")[0]); // Salva a data como YYYY-MM-DD
+		router.push(`?${newSearchParams.toString()}`);
+	};
+
 	const handleSignOut = async () => {
 		const { error } = await supabase.auth.signOut();
 		if (error) {
@@ -194,6 +216,8 @@ export default function HomePage() {
 					games={games}
 					userGuesses={userGuesses}
 					onGuess={handleGuess}
+					currentDate={currentDate}
+					onDateChange={handleDateChange}
 				/>
 			</main>
 
@@ -253,17 +277,17 @@ export default function HomePage() {
 						</div>
 
 						{!showConfirmation ? (
-							<div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+							<div className="flex justify-center gap-3 pt-4 border-t border-gray-100">
 								<Button
 									variant="default"
 									onClick={handleCloseModal}
-									className="px-6 bg-gray-200 text-gray-900 hover:bg-gray-300"
+									className="px-6 w-32 bg-gray-200 text-gray-900 hover:bg-gray-300"
 								>
 									Cancelar
 								</Button>
 								<Button
 									onClick={handleConfirmSave}
-									className={`px-6 bg-black text-white font-bold ${isSaveDisabled ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-800"}`}
+									className={`px-6 w-32 bg-black text-white font-bold ${isSaveDisabled ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-800"}`}
 									disabled={isSaveDisabled}
 								>
 									Salvar Palpite
@@ -281,13 +305,13 @@ export default function HomePage() {
 									<Button
 										variant="default"
 										onClick={() => setShowConfirmation(false)}
-										className="px-6 bg-gray-200 text-gray-900 hover:bg-gray-300"
+										className="px-6 bg-gray-200 text-gray-900 hover:bg-gray-300 w-32"
 									>
 										Não
 									</Button>
 									<Button
 										onClick={handleSaveGuess}
-										className={`px-6 bg-red-400 text-white font-bold ${isSaveDisabled ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-800"}`}
+										className={`px-6  w-32 bg-red-400 text-white font-bold ${isSaveDisabled ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-800"}`}
 										disabled={isSaveDisabled}
 									>
 										Sim, Salvar
