@@ -38,7 +38,6 @@ export function GameCard({ game, userGuess, onGuess }: GameCardProps) {
 			)}
 
 			<div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-md border border-gray-200 relative z-[2]">
-				{/* Time da Casa */}
 				<div className="flex-1 flex items-center gap-2">
 					<div className="relative w-12 h-12 flex items-center justify-center">
 						<Image
@@ -54,7 +53,6 @@ export function GameCard({ game, userGuess, onGuess }: GameCardProps) {
 					</span>
 				</div>
 
-				{/* Centro - VS e Placar */}
 				<div className="flex flex-col items-center gap-2 mx-4">
 					<span className="text-gray-500 font-bold">Placar</span>
 					<div className="flex items-center gap-1">
@@ -72,7 +70,6 @@ export function GameCard({ game, userGuess, onGuess }: GameCardProps) {
 					</div>
 				</div>
 
-				{/* Time Visitante */}
 				<div className="flex-1 flex items-center justify-end gap-2">
 					<span className="font-medium text-gray-900">
 						{game.away_team.name}

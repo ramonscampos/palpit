@@ -7,11 +7,21 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+type GameWithTeams = Database["public"]["Tables"]["games"]["Row"] & {
+	home_team: Database["public"]["Tables"]["teams"]["Row"];
+	away_team: Database["public"]["Tables"]["teams"]["Row"];
+};
+
+type UserGuess = {
+	home_guess: number;
+	away_guess: number;
+};
+
 export default function HomePage() {
 	const supabase = createClientComponentClient<Database>();
 	const router = useRouter();
-	const [games, setGames] = useState<any[]>([]);
-	const [userGuesses, setUserGuesses] = useState<Record<string, any>>({});
+	const [games, setGames] = useState<GameWithTeams[]>([]);
+	const [userGuesses, setUserGuesses] = useState<Record<string, UserGuess>>({});
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
@@ -55,10 +65,22 @@ export default function HomePage() {
 						};
 						return acc;
 					},
-					{} as Record<string, any>,
+					{} as Record<string, UserGuess>,
 				);
 
-				setGames(gamesData || []);
+				// Simular palpites aleatórios para alguns jogos
+				const gamesWithRandomGuesses = gamesData?.map((game) => {
+					// 50% de chance de ter um palpite
+					if (Math.random() > 0.5) {
+						guessesMap[game.id] = {
+							home_guess: Math.floor(Math.random() * 5),
+							away_guess: Math.floor(Math.random() * 5),
+						};
+					}
+					return game;
+				});
+
+				setGames(gamesWithRandomGuesses || []);
 				setUserGuesses(guessesMap);
 			} catch (error) {
 				console.error("Erro ao carregar dados:", error);
