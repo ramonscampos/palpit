@@ -2,6 +2,7 @@
 
 import { GameList } from "@/components/games/game-list";
 import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
 import { Database } from "@/types/supabase";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useRouter } from "next/navigation";
@@ -23,6 +24,13 @@ export default function HomePage() {
 	const [games, setGames] = useState<GameWithTeams[]>([]);
 	const [userGuesses, setUserGuesses] = useState<Record<string, UserGuess>>({});
 	const [loading, setLoading] = useState(true);
+	const [selectedGame, setSelectedGame] = useState<GameWithTeams | null>(null);
+	const [isModalOpen, setIsModalOpen] = useState(false);
+	const [showConfirmation, setShowConfirmation] = useState(false);
+	const [homeGuessInput, setHomeGuessInput] = useState<number | "">("");
+	const [awayGuessInput, setAwayGuessInput] = useState<number | "">("");
+
+	const isSaveDisabled = homeGuessInput === "" || awayGuessInput === "";
 
 	useEffect(() => {
 		const loadData = async () => {
@@ -68,19 +76,7 @@ export default function HomePage() {
 					{} as Record<string, UserGuess>,
 				);
 
-				// Simular palpites aleatórios para alguns jogos
-				const gamesWithRandomGuesses = gamesData?.map((game) => {
-					// 50% de chance de ter um palpite
-					if (Math.random() > 0.5) {
-						guessesMap[game.id] = {
-							home_guess: Math.floor(Math.random() * 5),
-							away_guess: Math.floor(Math.random() * 5),
-						};
-					}
-					return game;
-				});
-
-				setGames(gamesWithRandomGuesses || []);
+				setGames(gamesData || []);
 				setUserGuesses(guessesMap);
 			} catch (error) {
 				console.error("Erro ao carregar dados:", error);
@@ -92,9 +88,72 @@ export default function HomePage() {
 		loadData();
 	}, [supabase, router]);
 
+	useEffect(() => {
+		// Preencher os inputs do palpite se o jogo já tiver um palpite
+		if (selectedGame && userGuesses[selectedGame.id]) {
+			setHomeGuessInput(userGuesses[selectedGame.id].home_guess);
+			setAwayGuessInput(userGuesses[selectedGame.id].away_guess);
+		} else {
+			setHomeGuessInput("");
+			setAwayGuessInput("");
+		}
+	}, [selectedGame, userGuesses]);
+
 	const handleGuess = (gameId: string) => {
-		// Aqui você pode implementar a lógica para abrir um modal ou navegar para uma página de palpite
-		console.log("Palpitar jogo:", gameId);
+		const game = games.find((g) => g.id === gameId);
+		if (game) {
+			setSelectedGame(game);
+			setIsModalOpen(true);
+			setShowConfirmation(false); // Reset confirmation state
+		}
+	};
+
+	const handleCloseModal = () => {
+		setIsModalOpen(false);
+		setSelectedGame(null);
+		setShowConfirmation(false); // Reset confirmation state
+	};
+
+	const handleConfirmSave = () => {
+		setShowConfirmation(true);
+	};
+
+	const handleSaveGuess = async () => {
+		if (!selectedGame) return;
+
+		setLoading(true);
+		const {
+			data: { user },
+		} = await supabase.auth.getUser();
+
+		if (!user) {
+			console.error("Usuário não autenticado.");
+			handleCloseModal();
+			return;
+		}
+
+		try {
+			const { error } = await supabase.from("guesses").upsert(
+				{
+					game_id: selectedGame.id,
+					user_id: user.id,
+					home_guess: Number(homeGuessInput),
+					away_guess: Number(awayGuessInput),
+				},
+				{ onConflict: "user_id,game_id" }, // Para atualizar se já existir
+			);
+
+			if (error) {
+				throw error;
+			}
+
+			router.refresh(); // Recarrega os dados na página
+		} catch (error) {
+			console.error("Erro ao salvar palpite:", error);
+		} finally {
+			setLoading(false);
+			handleCloseModal();
+		}
 	};
 
 	const handleSignOut = async () => {
@@ -137,6 +196,108 @@ export default function HomePage() {
 					onGuess={handleGuess}
 				/>
 			</main>
+
+			<Modal isOpen={isModalOpen} onClose={handleCloseModal} title="Palpitar">
+				{selectedGame && (
+					<div className="space-y-6">
+						<div className="flex items-center justify-between gap-8 px-4">
+							<div className="flex-1 flex flex-col items-center space-y-4">
+								<p className="font-semibold text-gray-900 h-14 flex items-center justify-center text-center">
+									{selectedGame.home_team.name}
+								</p>
+								<div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
+									{selectedGame.home_team.logo_url && (
+										<img
+											src={selectedGame.home_team.logo_url}
+											alt={selectedGame.home_team.name}
+											className="w-12 h-12 object-contain"
+										/>
+									)}
+								</div>
+								<input
+									type="number"
+									min="0"
+									value={homeGuessInput}
+									onChange={(e) => setHomeGuessInput(Number(e.target.value))}
+									className="w-20 h-12 text-center border-2 border-gray-400 rounded-lg text-lg font-bold text-gray-800 focus:border-gray-500 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+									placeholder="-"
+								/>
+							</div>
+
+							<div className="flex flex-col items-center justify-center">
+								<span className="text-2xl font-bold text-gray-400">x</span>
+							</div>
+
+							<div className="flex-1 flex flex-col items-center space-y-4">
+								<p className="font-semibold text-gray-900 h-14 flex items-center justify-center text-center">
+									{selectedGame.away_team.name}
+								</p>
+								<div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
+									{selectedGame.away_team.logo_url && (
+										<img
+											src={selectedGame.away_team.logo_url}
+											alt={selectedGame.away_team.name}
+											className="w-12 h-12 object-contain"
+										/>
+									)}
+								</div>
+								<input
+									type="number"
+									min="0"
+									value={awayGuessInput}
+									onChange={(e) => setAwayGuessInput(Number(e.target.value))}
+									className="w-20 h-12 text-center border-2 border-gray-400 rounded-lg text-lg font-bold text-gray-800 focus:border-gray-500 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+									placeholder="-"
+								/>
+							</div>
+						</div>
+
+						{!showConfirmation ? (
+							<div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+								<Button
+									variant="default"
+									onClick={handleCloseModal}
+									className="px-6 bg-gray-200 text-gray-900 hover:bg-gray-300"
+								>
+									Cancelar
+								</Button>
+								<Button
+									onClick={handleConfirmSave}
+									className={`px-6 bg-black text-white font-bold ${isSaveDisabled ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-800"}`}
+									disabled={isSaveDisabled}
+								>
+									Salvar Palpite
+								</Button>
+							</div>
+						) : (
+							<div className="space-y-4 pt-4 border-t border-gray-100 text-center">
+								<p className="text-lg font-semibold text-gray-800">
+									Tem certeza que deseja salvar este palpite?
+								</p>
+								<p className="text-sm text-gray-600">
+									Após salvar, o palpite não poderá ser alterado.
+								</p>
+								<div className="flex justify-center gap-3 mt-6">
+									<Button
+										variant="default"
+										onClick={() => setShowConfirmation(false)}
+										className="px-6 bg-gray-200 text-gray-900 hover:bg-gray-300"
+									>
+										Não
+									</Button>
+									<Button
+										onClick={handleSaveGuess}
+										className={`px-6 bg-red-400 text-white font-bold ${isSaveDisabled ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-800"}`}
+										disabled={isSaveDisabled}
+									>
+										Sim, Salvar
+									</Button>
+								</div>
+							</div>
+						)}
+					</div>
+				)}
+			</Modal>
 		</div>
 	);
 }

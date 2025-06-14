@@ -16,12 +16,6 @@ interface GameCardProps {
 }
 
 export function GameCard({ game, userGuess, onGuess }: GameCardProps) {
-	// Dados fake para teste
-	const fakeGuess = {
-		home_guess: Math.floor(Math.random() * 5),
-		away_guess: Math.floor(Math.random() * 5),
-	};
-
 	return (
 		<div className="px-20 relative">
 			{!!userGuess && (
@@ -29,10 +23,10 @@ export function GameCard({ game, userGuess, onGuess }: GameCardProps) {
 					<div className="absolute inset-0 bg-gray-100 rounded-xl" />
 
 					<div className="absolute left-3 top-1/2 -translate-y-1/2 text-8xl font-bold text-gray-200">
-						{fakeGuess.home_guess}
+						{userGuess.home_guess}
 					</div>
 					<div className="absolute right-3 top-1/2 -translate-y-1/2 text-8xl font-bold text-gray-200">
-						{fakeGuess.away_guess}
+						{userGuess.away_guess}
 					</div>
 				</>
 			)}
@@ -57,14 +51,22 @@ export function GameCard({ game, userGuess, onGuess }: GameCardProps) {
 					<span className="text-gray-500 font-bold">Placar</span>
 					<div className="flex items-center gap-1">
 						<div className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-md border border-gray-200">
-							<span className="text-gray-900 font-bold">
-								{fakeGuess.home_guess}
+							<span
+								className={
+									game.away_score ? "text-gray-900 font-bold" : "text-gray-600"
+								}
+							>
+								{game.home_score || "-"}
 							</span>
 						</div>
 						<span className="text-gray-400">x</span>
 						<div className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-md border border-gray-200">
-							<span className="text-gray-900 font-bold">
-								{fakeGuess.away_guess}
+							<span
+								className={
+									game.away_score ? "text-gray-900 font-bold" : "text-gray-600"
+								}
+							>
+								{game.away_score || "-"}
 							</span>
 						</div>
 					</div>
