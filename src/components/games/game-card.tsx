@@ -302,10 +302,6 @@ export function GameCard({
 						<div className="w-[90%] md:w-[60%] mx-auto">
 							<ul className="space-y-2 pb-2">
 								{allGuesses
-									.filter(
-										(guess: GuessWithProfile) =>
-											guess.user_id !== currentUserId,
-									)
 									.map((guess: GuessWithProfile) => {
 										let winningTeamLogoUrl: string | null = null;
 										let winningTeamName: string | null = null;
@@ -404,7 +400,12 @@ export function GameCard({
 												</div>
 
 												<div className="flex-1 flex items-center justify-end gap-1">
-													<span>{formatDisplayName(guess.profiles?.name)}</span>
+													<span className={guess.user_id === currentUserId ? "font-bold" : ""}>
+														{guess.user_id === currentUserId && (
+															<span className="text-xs text-gray-500 mr-1">(você)</span>
+														)}
+														{formatDisplayName(guess.profiles?.name)}
+													</span>
 													{guess.profiles?.avatar_url && (
 														<Image
 															src={guess.profiles.avatar_url}
