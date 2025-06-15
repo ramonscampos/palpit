@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase-client";
 import { cn } from "@/lib/utils";
 import { Tables } from "@/types/supabase";
-import { Ban, ChevronDown, ChevronUp, DiamondPlus } from "lucide-react";
+import { Ban, ChevronDown, ChevronUp, DiamondPlus, Pen } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Button } from "../ui/button";
@@ -163,6 +163,12 @@ export function GameCard({
 		return "no_guess";
 	};
 
+	const handleOnGuess = (gameId: string) => {
+		if (!isPredictionClosed) {
+			onGuess(gameId)
+		}
+	}
+
 	return (
 		<div>
 			<div className="px-12 md:px-20 relative">
@@ -255,7 +261,7 @@ export function GameCard({
 				{!userGuess && (
 					<div className="absolute right-[6px] md:right-[38px] top-0 h-full">
 						<Button
-							onClick={() => onGuess(game.id)}
+							onClick={() => handleOnGuess(game.id)}
 							variant="secondary"
 							title={isPredictionClosed ? "Palpites encerrados" : "Palpitar"}
 							className={`bg-emerald-500 text-white font-medium h-full ${isPredictionClosed ? "opacity-50 bg-gray-500 cursor-not-allowed" : "hover:bg-emerald-600 cursor-pointer"}`}
@@ -271,18 +277,32 @@ export function GameCard({
 				)}
 			</div>
 
-			<button
-				type="button"
-				onClick={() => setShowAllGuesses(!showAllGuesses)}
-				className="text-gray-500 text-xs hover:text-gray-700 flex items-center justify-center mx-auto bg-white my-0 px-4 py-1 shadow-sm rounded-full mt-2 cursor-pointer"
-			>
-				{showAllGuesses ? "Mostrar menos" : "Mostrar todos os palpites"}
-				{showAllGuesses ? (
-					<ChevronUp className="ml-1 h-4 w-4" />
-				) : (
-					<ChevronDown className="ml-1 h-4 w-4" />
-				)}
-			</button>
+			<div className={cn("mt-2 flex justify-between items-center px-1 md:px-20", !userGuess && 'justify-center')}>
+				<button
+					type="button"
+					onClick={() => setShowAllGuesses(!showAllGuesses)}
+					className="text-gray-500 text-xs hover:text-gray-700 flex items-center justify-center bg-white px-4 py-1 shadow-sm rounded-full cursor-pointer"
+					>
+					{showAllGuesses ? "Mostrar menos" : "Mostrar todos os palpites"}
+					{showAllGuesses ? (
+						<ChevronUp className="ml-1 h-4 w-4" />
+					) : (
+						<ChevronDown className="ml-1 h-4 w-4" />
+					)}
+				</button>
+
+				{
+					!!userGuess && !isPredictionClosed &&
+						<button
+							type="button"
+							onClick={() => handleOnGuess(game.id)}
+							className="text-gray-500 text-xs hover:text-gray-700 flex items-center justify-center bg-white px-4 py-1 shadow-sm rounded-full cursor-pointer"
+							>
+							<Pen className="mr-1 h-3 w-3" />
+							Editar palpite
+						</button>
+				}
+			</div>
 
 			<div className="mt-2 text-center">
 				<div
