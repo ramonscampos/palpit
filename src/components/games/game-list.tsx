@@ -42,7 +42,7 @@ export function GameList({
 		setCurrentDate(newDate);
 		const newSearchParams = new URLSearchParams(searchParams.toString());
 		newSearchParams.set("date", newDate.toISOString().split("T")[0]); // Salva a data como YYYY-MM-DD
-		router.push(`?${newSearchParams.toString()}`);
+		router.push(`?${newSearchParams.toString()}`, { scroll: false });
 	};
 
 	useEffect(() => {
