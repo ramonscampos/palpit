@@ -93,7 +93,14 @@ export function LeaderboardTable() {
 				});
 
 				// Ordenar por pontuação total (decrescente)
-				leaderboardData.sort((a, b) => b.totalPoints - a.totalPoints);
+				leaderboardData.sort((a, b) => {
+					// Primeiro ordena por pontuação
+					if (b.totalPoints !== a.totalPoints) {
+						return b.totalPoints - a.totalPoints;
+					}
+					// Em caso de empate, ordena alfabeticamente
+					return (a.profile.name || "").localeCompare(b.profile.name || "");
+				});
 
 				setLeaderboard(leaderboardData);
 			} catch (error) {
@@ -113,6 +120,21 @@ export function LeaderboardTable() {
 			</div>
 		);
 	}
+
+	// Calcula as posições considerando empates
+	const actualPositions: number[] = leaderboard.reduce((acc: number[], entry, index) => {
+		if (index === 0) {
+			acc.push(1);
+		} else {
+			const prevEntry = leaderboard[index - 1];
+			if (entry.totalPoints === prevEntry.totalPoints) {
+				acc.push(acc[index - 1]);
+			} else {
+				acc.push(acc[index - 1] + 1);
+			}
+		}
+		return acc;
+	}, []);
 
 	return (
 		<>
@@ -160,7 +182,7 @@ export function LeaderboardTable() {
 							{leaderboard.map((entry, index) => (
 								<tr key={entry.profile.id} className="hover:bg-gray-50">
 									<td className="w-12 px-2 py-4 whitespace-nowrap text-xl font-bold text-gray-500">
-										{index + 1}º
+										{actualPositions[index]}º
 									</td>
 									<td className="px-6 pl-2 md:pl-6 py-4 whitespace-nowrap">
 										<div className="flex items-center">
