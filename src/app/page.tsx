@@ -6,17 +6,12 @@ import { BrazilianTeamBet } from "@/components/predictions/brazilian-team-bet";
 import { PredictionModal } from "@/components/predictions/prediction-modal";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase-client";
-import { Database } from "@/types/supabase";
+import { GameWithTeams } from "@/types/game";
 import { User } from "@supabase/supabase-js";
 import { LogOut } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-
-type GameWithTeams = Database["public"]["Tables"]["games"]["Row"] & {
-	home_team: Database["public"]["Tables"]["teams"]["Row"];
-	away_team: Database["public"]["Tables"]["teams"]["Row"];
-};
 
 type UserGuess = {
 	home_guess: number;

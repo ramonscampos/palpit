@@ -1,5 +1,6 @@
 import { UpdateResultModal } from "@/components/predictions/update-result-modal";
 import { cn } from "@/lib/utils";
+import { GameWithTeams } from "@/types/game";
 import { Tables } from "@/types/supabase";
 import { Ban, ChevronDown, ChevronUp, DiamondPlus, Pen } from "lucide-react";
 import Image from "next/image";
@@ -11,10 +12,7 @@ interface GuessWithProfile extends Tables<"guesses"> {
 }
 
 interface GameCardProps {
-	game: Tables<"games"> & {
-		home_team: Tables<"teams">;
-		away_team: Tables<"teams">;
-	};
+	game: GameWithTeams;
 	userGuess?: {
 		home_guess: number;
 		away_guess: number;

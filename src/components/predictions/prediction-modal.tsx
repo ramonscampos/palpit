@@ -2,14 +2,10 @@
 
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
+import { GameWithTeams } from "@/types/game";
 import { Database } from "@/types/supabase";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-
-type GameWithTeams = Database["public"]["Tables"]["games"]["Row"] & {
-	home_team: Database["public"]["Tables"]["teams"]["Row"];
-	away_team: Database["public"]["Tables"]["teams"]["Row"];
-};
 
 interface PredictionModalProps {
 	isOpen: boolean;

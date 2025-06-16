@@ -1,14 +1,11 @@
-import { Tables } from "@/types/supabase";
+import { GameWithTeams } from "@/types/game";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { GameCard } from "./game-card";
 import { GameHeader } from "./game-header";
 
 interface GameListProps {
-	games: (Tables<"games"> & {
-		home_team: Tables<"teams">;
-		away_team: Tables<"teams">;
-	})[];
+	games: GameWithTeams[];
 	userGuesses: Record<string, { home_guess: number; away_guess: number }>;
 	onGuess: (gameId: string) => void;
 	currentUserId: string | null;
