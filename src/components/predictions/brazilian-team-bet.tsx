@@ -18,9 +18,17 @@ interface BrazilianTeamBetProps {
   currentUserId: string | null;
 }
 
+interface GroupedBet {
+  team: Team;
+  users: Array<{
+    avatar_url: string | null;
+    name: string | null;
+  }>;
+}
+
 export function BrazilianTeamBet({ currentUserId }: BrazilianTeamBetProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [bets, setBets] = useState<BrazilBet[]>([]);
+  const [groupedBets, setGroupedBets] = useState<GroupedBet[]>([]);
   const [loading, setLoading] = useState(true);
   const [userHasBet, setUserHasBet] = useState(false);
 
@@ -37,20 +45,29 @@ export function BrazilianTeamBet({ currentUserId }: BrazilianTeamBetProps) {
 
       if (error) throw error;
       
-      let loadedBets = data || [];
-      let hasBet = false;
-
-      if (currentUserId) {
-        const userBetIndex = loadedBets.findIndex(bet => bet.user_id === currentUserId);
-        if (userBetIndex !== -1) {
-          const userBet = loadedBets[userBetIndex];
-          loadedBets.splice(userBetIndex, 1);
-          loadedBets.unshift(userBet);
-          hasBet = true;
+      const bets = data || [];
+      
+      // Agrupar palpites por time
+      const grouped = bets.reduce((acc: GroupedBet[], bet) => {
+        const existingTeam = acc.find(group => group.team.id === bet.team.id);
+        
+        if (existingTeam) {
+          existingTeam.users.push(bet.user);
+        } else {
+          acc.push({
+            team: bet.team,
+            users: [bet.user]
+          });
         }
-      }
-      setBets(loadedBets);
-      setUserHasBet(hasBet);
+        
+        return acc;
+      }, []);
+
+      // Ordenar por número de votos (decrescente)
+      grouped.sort((a, b) => b.users.length - a.users.length);
+      
+      setGroupedBets(grouped);
+      setUserHasBet(bets.some(bet => bet.user_id === currentUserId));
 
     } catch (error) {
       console.error("Erro ao carregar palpites:", error);
@@ -143,36 +160,43 @@ export function BrazilianTeamBet({ currentUserId }: BrazilianTeamBetProps) {
           )}
         </div>
 
-        {bets.length === 0 ? (
+        {groupedBets.length === 0 ? (
           <div className="text-center text-gray-500 py-8">
             Ninguém fez palpite ainda. Seja o primeiro!
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
-            {bets.map((bet) => (
-              <div key={bet.id} className="flex items-center gap-4 p-4 hover:bg-gray-50">
-                {bet.team.logo_url && (
-                  <Image
-                    src={bet.team.logo_url}
-                    alt={bet.team.name}
-                    width={40}
-                    height={40}
-                  />
-                )}
-                <div className="flex-1">
-                  <p className="font-bold text-gray-900">{bet.team.name}</p>
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    {bet.user.avatar_url && (
-                      <Image
-                        src={bet.user.avatar_url}
-                        alt={bet.user.name || "Usuário"}
-                        width={20}
-                        height={20}
-                        className="rounded-full"
-                      />
-                    )}
-                    <span>{bet.user.name || "Usuário"}</span>
+            {groupedBets.map((group) => (
+              <div key={group.team.id} className="p-4 hover:bg-gray-50">
+                <div className="flex items-center gap-4 mb-3">
+                  {group.team.logo_url && (
+                    <Image
+                      src={group.team.logo_url}
+                      alt={group.team.name}
+                      width={40}
+                      height={40}
+                    />
+                  )}
+                  <div>
+                    <p className="font-bold text-gray-900">{group.team.name}</p>
+                    <p className="text-sm text-gray-500">{group.users.length} {group.users.length === 1 ? 'voto' : 'votos'}</p>
                   </div>
+                </div>
+                <div className="pl-14 space-y-2">
+                  {group.users.map((user, index) => (
+                    <div key={index} className="flex items-center gap-2 text-sm text-gray-500">
+                      {user.avatar_url && (
+                        <Image
+                          src={user.avatar_url}
+                          alt={user.name || "Usuário"}
+                          width={20}
+                          height={20}
+                          className="rounded-full"
+                        />
+                      )}
+                      <span>{user.name || "Usuário"}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}

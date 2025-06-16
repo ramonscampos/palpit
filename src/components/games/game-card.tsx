@@ -277,7 +277,7 @@ export function GameCard({
 				)}
 			</div>
 
-			<div className={cn("mt-2 flex justify-between items-center px-1 md:px-20", !userGuess && 'justify-center')}>
+			<div className={cn("mt-2 flex justify-between items-center px-1 md:px-20", (!userGuess || isPredictionClosed) && 'justify-center')}>
 				<button
 					type="button"
 					onClick={() => setShowAllGuesses(!showAllGuesses)}

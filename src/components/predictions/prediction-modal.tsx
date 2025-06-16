@@ -172,7 +172,7 @@ export function PredictionModal({
                 Tem certeza que deseja salvar este palpite?
               </p>
               <p className="text-sm text-gray-600">
-                Após salvar, o palpite não poderá ser alterado.
+                Lembrando que o palpite só pode ser alterado até 1 hora antes da partida.
               </p>
               <div className="flex justify-center gap-3 mt-6">
                 <Button
