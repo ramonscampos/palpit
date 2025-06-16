@@ -1,4 +1,3 @@
-import { supabase } from "@/lib/supabase-client";
 import { cn } from "@/lib/utils";
 import { Tables } from "@/types/supabase";
 import { Ban, ChevronDown, ChevronUp, DiamondPlus, Pen } from "lucide-react";
@@ -43,33 +42,47 @@ export function GameCard({
 	const [allGuesses, setAllGuesses] = useState<GuessWithProfile[]>([]); // Estado para armazenar todos os palpites
 	const [isLoadingAllGuesses, setIsLoadingAllGuesses] = useState(false);
 
-	useEffect(() => {
-		if (showAllGuesses && allGuesses.length === 0 && !isLoadingAllGuesses) {
-			const fetchAllGuesses = async () => {
-				setIsLoadingAllGuesses(true);
-				try {
-					const { data, error } = await supabase
-						.from("guesses")
-						.select(`
-							*,
-							profiles(name, avatar_url)
-						`)
-						.eq("game_id", game.id)
-						.order("created_at", { ascending: false });
+	const [hasLoadedGuesses, setHasLoadedGuesses] = useState(false);
+	const [shouldLoadGuesses, setShouldLoadGuesses] = useState(false);
 
-					if (error) {
-						throw error;
-					}
-					setAllGuesses(data || []);
-				} catch (error) {
-					console.error("Erro ao carregar todos os palpites:", error);
-				} finally {
-					setIsLoadingAllGuesses(false);
-				}
-			};
-			fetchAllGuesses();
+	useEffect(() => {
+		if (!shouldLoadGuesses || isLoadingAllGuesses) return;
+
+		const fetchAllGuesses = async () => {
+			setIsLoadingAllGuesses(true);
+			try {
+				const response = await fetch(`/api/game-guesses?gameId=${game.id}`);
+				if (!response.ok) throw new Error("Erro ao carregar palpites");
+
+				const { data } = await response.json();
+				setAllGuesses(data || []);
+				setHasLoadedGuesses(true);
+			} catch (error) {
+				console.error("Erro ao carregar todos os palpites:", error);
+			} finally {
+				setIsLoadingAllGuesses(false);
+				setShouldLoadGuesses(false); // <- ZERA O TRIGGER
+			}
+		};
+
+		fetchAllGuesses();
+	}, [shouldLoadGuesses, isLoadingAllGuesses, game.id]);
+
+	useEffect(() => {
+		if (
+			showAllGuesses &&
+			!isLoadingAllGuesses &&
+			!allGuesses.length &&
+			!hasLoadedGuesses
+		) {
+			setShouldLoadGuesses(true);
 		}
-	}, [showAllGuesses, allGuesses.length, isLoadingAllGuesses, game.id]);
+	}, [
+		showAllGuesses,
+		isLoadingAllGuesses,
+		allGuesses.length,
+		hasLoadedGuesses,
+	]);
 
 	if (userGuess && game.home_score !== null && game.away_score !== null) {
 		const homeActual = game.home_score;
@@ -106,68 +119,27 @@ export function GameCard({
 	};
 
 	function formatDisplayName(fullName?: string | null) {
-		if (!fullName) return ''
+		if (!fullName) return "";
 
-		const prepositions = ['de', 'da', 'do', 'dos', 'das']
-		const parts = fullName.trim().split(/\s+/)
-	  
-		if (parts.length === 0) return ''
-	  
+		const prepositions = ["de", "da", "do", "dos", "das"];
+		const parts = fullName.trim().split(/\s+/);
+
+		if (parts.length === 0) return "";
+
 		// Se o segundo nome for uma preposição, inclui o terceiro
 		if (prepositions.includes(parts[1]?.toLowerCase())) {
-		  return parts.slice(0, 3).join(' ')
+			return parts.slice(0, 3).join(" ");
 		}
-	  
+
 		// Caso contrário, pega só os dois primeiros
-		return parts.slice(0, 2).join(' ')
-	  }
-
-	const hasGuessed = !!userGuess;
-	const isGameFinished = game.home_score !== null && game.away_score !== null;
-	const canGuess = !isGameFinished;
-
-	const calculateResult = ():
-		| "correct_score"
-		| "correct_winner"
-		| "incorrect"
-		| "no_guess" => {
-		if (userGuess && game.home_score !== null && game.away_score !== null) {
-			const homeActual = game.home_score;
-			const awayActual = game.away_score;
-			const homeGuess = userGuess.home_guess;
-			const awayGuess = userGuess.away_guess;
-
-			const didGuessHomeWin = homeGuess > awayGuess;
-			const didGuessAwayWin = awayGuess > homeGuess;
-			const didGuessDraw = homeGuess === awayGuess;
-
-			const didHomeWin = homeActual > awayActual;
-			const didAwayWin = awayActual > homeActual;
-			const didDraw = homeActual === awayActual;
-
-			// Acertou o placar exato
-			if (homeGuess === homeActual && awayGuess === awayActual) {
-				return "correct_score";
-			} // Acertou o vencedor
-
-			if (
-				(didGuessHomeWin && didHomeWin) ||
-				(didGuessAwayWin && didAwayWin) ||
-				(didGuessDraw && didDraw)
-			) {
-				return "correct_winner";
-			} // Errou tudo
-
-			return "incorrect";
-		}
-		return "no_guess";
-	};
+		return parts.slice(0, 2).join(" ");
+	}
 
 	const handleOnGuess = (gameId: string) => {
 		if (!isPredictionClosed) {
-			onGuess(gameId)
+			onGuess(gameId);
 		}
-	}
+	};
 
 	return (
 		<div>
@@ -191,7 +163,12 @@ export function GameCard({
 					</>
 				)}
 
-				<div className={cn("flex items-center justify-between p-4 bg-white rounded-lg shadow-md border border-gray-200 relative z-[2] md:ml-0 md:w-full md:pl-4", !userGuess && "pl-[46px] w-[calc(100%_+_46px)] -ml-[46px]")}>
+				<div
+					className={cn(
+						"flex items-center justify-between p-4 bg-white rounded-lg shadow-md border border-gray-200 relative z-[2] md:ml-0 md:w-full md:pl-4",
+						!userGuess && "pl-[46px] w-[calc(100%_+_46px)] -ml-[46px]",
+					)}
+				>
 					<div className="flex-1 flex items-center gap-2">
 						<div className="relative w-12 h-12 flex items-center justify-center">
 							<Image
@@ -208,7 +185,9 @@ export function GameCard({
 					</div>
 
 					<div className="flex flex-col items-center gap-2 mx-2 md:mx-4">
-						<span className="text-xs sm:text-sm text-gray-500 font-bold">Placar</span>
+						<span className="text-xs sm:text-sm text-gray-500 font-bold">
+							Placar
+						</span>
 						<div className="flex items-center gap-1">
 							<div className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-md border border-gray-200">
 								<span
@@ -277,12 +256,17 @@ export function GameCard({
 				)}
 			</div>
 
-			<div className={cn("mt-2 flex justify-between items-center px-1 md:px-20", (!userGuess || isPredictionClosed) && 'justify-center')}>
+			<div
+				className={cn(
+					"mt-2 flex justify-between items-center px-1 md:px-20",
+					(!userGuess || isPredictionClosed) && "justify-center",
+				)}
+			>
 				<button
 					type="button"
 					onClick={() => setShowAllGuesses(!showAllGuesses)}
 					className="text-gray-500 text-xs hover:text-gray-700 flex items-center justify-center bg-white px-4 py-1 shadow-sm rounded-full cursor-pointer"
-					>
+				>
 					{showAllGuesses ? "Mostrar menos" : "Mostrar todos os palpites"}
 					{showAllGuesses ? (
 						<ChevronUp className="ml-1 h-4 w-4" />
@@ -291,17 +275,16 @@ export function GameCard({
 					)}
 				</button>
 
-				{
-					!!userGuess && !isPredictionClosed &&
-						<button
-							type="button"
-							onClick={() => handleOnGuess(game.id)}
-							className="text-gray-500 text-xs hover:text-gray-700 flex items-center justify-center bg-white px-4 py-1 shadow-sm rounded-full cursor-pointer"
-							>
-							<Pen className="mr-1 h-3 w-3" />
-							Editar palpite
-						</button>
-				}
+				{!!userGuess && !isPredictionClosed && (
+					<button
+						type="button"
+						onClick={() => handleOnGuess(game.id)}
+						className="text-gray-500 text-xs hover:text-gray-700 flex items-center justify-center bg-white px-4 py-1 shadow-sm rounded-full cursor-pointer"
+					>
+						<Pen className="mr-1 h-3 w-3" />
+						Editar palpite
+					</button>
+				)}
 			</div>
 
 			<div className="mt-2 text-center">
@@ -321,121 +304,123 @@ export function GameCard({
 					{!isLoadingAllGuesses && allGuesses.length > 0 && showAllGuesses && (
 						<div className="w-[90%] md:w-[60%] mx-auto">
 							<ul className="space-y-2 pb-2">
-								{allGuesses
-									.map((guess: GuessWithProfile) => {
-										let winningTeamLogoUrl: string | null = null;
-										let winningTeamName: string | null = null;
-										let isDrawGuess = false;
+								{allGuesses.map((guess: GuessWithProfile) => {
+									let winningTeamLogoUrl: string | null = null;
+									let winningTeamName: string | null = null;
+									let isDrawGuess = false;
 
-										if (guess.home_guess > guess.away_guess) {
-											winningTeamLogoUrl = game.home_team.logo_url;
-											winningTeamName = game.home_team.name;
-										} else if (guess.away_guess > guess.home_guess) {
-											winningTeamLogoUrl = game.away_team.logo_url;
-											winningTeamName = game.away_team.name;
-										} else {
-											// Palpite de empate
-											isDrawGuess = true;
+									if (guess.home_guess > guess.away_guess) {
+										winningTeamLogoUrl = game.home_team.logo_url;
+										winningTeamName = game.home_team.name;
+									} else if (guess.away_guess > guess.home_guess) {
+										winningTeamLogoUrl = game.away_team.logo_url;
+										winningTeamName = game.away_team.name;
+									} else {
+										// Palpite de empate
+										isDrawGuess = true;
+									}
+
+									let guessCardBgColor = "bg-gray-100";
+									let cardShadowClass = "shadow-sm";
+									let cardBorderClass = "border border-gray-200";
+
+									if (game.home_score !== null && game.away_score !== null) {
+										const homeActual = game.home_score;
+										const awayActual = game.away_score;
+										const homeGuess = guess.home_guess;
+										const awayGuess = guess.away_guess;
+
+										const didGuessHomeWin = homeGuess > awayGuess;
+										const didGuessAwayWin = awayGuess > homeGuess;
+										const didGuessDraw = homeGuess === awayGuess;
+
+										const didHomeWin = homeActual > awayActual;
+										const didAwayWin = awayActual > homeActual;
+										const didDraw = homeActual === awayActual;
+
+										// Acertou o placar exato
+										if (homeGuess === homeActual && awayGuess === awayActual) {
+											guessCardBgColor = "bg-green-100/40"; // Verde com 40% de opacidade
+											cardShadowClass = ""; // Sem sombra
+											cardBorderClass = "border border-green-500"; // Borda verde forte
+										} // Acertou o vencedor
+										else if (
+											(didGuessHomeWin && didHomeWin) ||
+											(didGuessAwayWin && didAwayWin) ||
+											(didGuessDraw && didDraw)
+										) {
+											guessCardBgColor = "bg-yellow-100/40"; // Amarelo com 40% de opacidade
+											cardShadowClass = ""; // Sem sombra
+											cardBorderClass = "border border-yellow-500"; // Borda amarela forte
+										} // Errou tudo
+										else {
+											guessCardBgColor = "bg-red-100/40"; // Vermelho com 40% de opacidade
+											cardShadowClass = ""; // Sem sombra
+											cardBorderClass = "border border-red-500"; // Borda vermelha forte
 										}
+									}
 
-										let guessCardBgColor = "bg-gray-100";
-										let cardShadowClass = "shadow-sm";
-										let cardBorderClass = "border border-gray-200";
-
-										if (game.home_score !== null && game.away_score !== null) {
-											const homeActual = game.home_score;
-											const awayActual = game.away_score;
-											const homeGuess = guess.home_guess;
-											const awayGuess = guess.away_guess;
-
-											const didGuessHomeWin = homeGuess > awayGuess;
-											const didGuessAwayWin = awayGuess > homeGuess;
-											const didGuessDraw = homeGuess === awayGuess;
-
-											const didHomeWin = homeActual > awayActual;
-											const didAwayWin = awayActual > homeActual;
-											const didDraw = homeActual === awayActual;
-
-											// Acertou o placar exato
-											if (
-												homeGuess === homeActual &&
-												awayGuess === awayActual
-											) {
-												guessCardBgColor = "bg-green-100/40"; // Verde com 40% de opacidade
-												cardShadowClass = ""; // Sem sombra
-												cardBorderClass = "border border-green-500"; // Borda verde forte
-											} // Acertou o vencedor
-											else if (
-												(didGuessHomeWin && didHomeWin) ||
-												(didGuessAwayWin && didAwayWin) ||
-												(didGuessDraw && didDraw)
-											) {
-												guessCardBgColor = "bg-yellow-100/40"; // Amarelo com 40% de opacidade
-												cardShadowClass = ""; // Sem sombra
-												cardBorderClass = "border border-yellow-500"; // Borda amarela forte
-											} // Errou tudo
-											else {
-												guessCardBgColor = "bg-red-100/40"; // Vermelho com 40% de opacidade
-												cardShadowClass = ""; // Sem sombra
-												cardBorderClass = "border border-red-500"; // Borda vermelha forte
-											}
-										}
-
-										return (
-											<li
-												key={guess.id}
-												className={`flex justify-between items-center text-sm text-gray-700 py-1 ${guessCardBgColor} p-3 rounded-lg ${cardShadowClass} ${cardBorderClass} gap-4`}
-											>
-												<div className="flex items-center">
-													<div className="relative w-6 h-6 flex-shrink-0">
-														{isDrawGuess ? (
-															<div className="w-full h-full rounded-full bg-gray-200 flex items-center justify-center text-gray-700 font-bold text-xs">
-																E
-															</div>
-														) : (
-															winningTeamLogoUrl && (
-																<Image
-																	src={winningTeamLogoUrl}
-																	alt={winningTeamName || "Time vencedor"}
-																	fill
-																	className="object-contain"
-																/>
-															)
-														)}
-													</div>
-												</div>
-
-												<div className="flex items-center gap-1 justify-center">
-													<div className="w-6 h-6 flex items-center justify-center bg-gray-100 rounded-md border border-gray-200">
-														<span className="text-gray-900 font-bold">
-															{guess.home_guess}
-														</span>
-													</div>
-													<span className="text-gray-400 mx-1">x</span>
-													<div className="w-6 h-6 flex items-center justify-center bg-gray-100 rounded-md border border-gray-200">
-														<span className="text-gray-900 font-bold">
-															{guess.away_guess}
-														</span>
-													</div>
-												</div>
-
-												<div className="flex-1 flex items-center justify-end gap-1">
-													<span className={guess.user_id === currentUserId ? "font-bold text-right" : "text-right"}>
-														{formatDisplayName(guess.profiles?.name)}
-													</span>
-													{guess.profiles?.avatar_url && (
-														<Image
-															src={guess.profiles.avatar_url}
-															alt={guess.profiles.name || "User Avatar"}
-															width={20}
-															height={20}
-															className="rounded-full"
-														/>
+									return (
+										<li
+											key={guess.id}
+											className={`flex justify-between items-center text-sm text-gray-700 py-1 ${guessCardBgColor} p-3 rounded-lg ${cardShadowClass} ${cardBorderClass} gap-4`}
+										>
+											<div className="flex items-center">
+												<div className="relative w-6 h-6 flex-shrink-0">
+													{isDrawGuess ? (
+														<div className="w-full h-full rounded-full bg-gray-200 flex items-center justify-center text-gray-700 font-bold text-xs">
+															E
+														</div>
+													) : (
+														winningTeamLogoUrl && (
+															<Image
+																src={winningTeamLogoUrl}
+																alt={winningTeamName || "Time vencedor"}
+																fill
+																className="object-contain"
+															/>
+														)
 													)}
 												</div>
-											</li>
-										);
-									})}
+											</div>
+
+											<div className="flex items-center gap-1 justify-center">
+												<div className="w-6 h-6 flex items-center justify-center bg-gray-100 rounded-md border border-gray-200">
+													<span className="text-gray-900 font-bold">
+														{guess.home_guess}
+													</span>
+												</div>
+												<span className="text-gray-400 mx-1">x</span>
+												<div className="w-6 h-6 flex items-center justify-center bg-gray-100 rounded-md border border-gray-200">
+													<span className="text-gray-900 font-bold">
+														{guess.away_guess}
+													</span>
+												</div>
+											</div>
+
+											<div className="flex-1 flex items-center justify-end gap-1">
+												<span
+													className={
+														guess.user_id === currentUserId
+															? "font-bold text-right"
+															: "text-right"
+													}
+												>
+													{formatDisplayName(guess.profiles?.name)}
+												</span>
+												{guess.profiles?.avatar_url && (
+													<Image
+														src={guess.profiles.avatar_url}
+														alt={guess.profiles.name || "User Avatar"}
+														width={20}
+														height={20}
+														className="rounded-full"
+													/>
+												)}
+											</div>
+										</li>
+									);
+								})}
 							</ul>
 						</div>
 					)}
