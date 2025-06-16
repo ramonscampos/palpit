@@ -1,3 +1,4 @@
+import { UpdateResultModal } from "@/components/predictions/update-result-modal";
 import { cn } from "@/lib/utils";
 import { Tables } from "@/types/supabase";
 import { Ban, ChevronDown, ChevronUp, DiamondPlus, Pen } from "lucide-react";
@@ -34,6 +35,8 @@ export function GameCard({
 	const isPredictionClosed = timeDifference <= 60 * 60 * 1000; // 60 minutos em milissegundos
 
 	const hasActualScore = game.home_score !== null && game.away_score !== null;
+	const isAdmin = currentUserId === "631aa0ad-e28f-46cc-b655-bb141c04488a";
+	const [isUpdateResultModalOpen, setIsUpdateResultModalOpen] = useState(false);
 
 	const resultColorClass = "bg-gray-100"; // Cor padrão (cinza claro)
 	let resultTextColorClass = "text-gray-300"; // Cor padrão do texto (cinza claro)
@@ -237,7 +240,7 @@ export function GameCard({
 					</div>
 				</div>
 
-				{!userGuess && (
+				{!userGuess && !isAdmin && (
 					<div className="absolute right-[6px] md:right-[38px] top-0 h-full">
 						<Button
 							onClick={() => handleOnGuess(game.id)}
@@ -251,6 +254,19 @@ export function GameCard({
 							) : (
 								<DiamondPlus className="left-[6px] relative" />
 							)}
+						</Button>
+					</div>
+				)}
+
+				{isAdmin && (
+					<div className="absolute right-[6px] md:right-[38px] top-0 h-full">
+						<Button
+							onClick={() => setIsUpdateResultModalOpen(true)}
+							variant="secondary"
+							title="Atualizar Resultado"
+							className="bg-blue-500 text-white font-medium h-full hover:bg-blue-600 cursor-pointer"
+						>
+							<Pen className="left-[6px] relative" />
 						</Button>
 					</div>
 				)}
@@ -275,7 +291,7 @@ export function GameCard({
 					)}
 				</button>
 
-				{!!userGuess && !isPredictionClosed && (
+				{!!userGuess && !isPredictionClosed && !isAdmin && (
 					<button
 						type="button"
 						onClick={() => handleOnGuess(game.id)}
@@ -426,6 +442,14 @@ export function GameCard({
 					)}
 				</div>
 			</div>
+
+			{isAdmin && (
+				<UpdateResultModal
+					isOpen={isUpdateResultModalOpen}
+					onClose={() => setIsUpdateResultModalOpen(false)}
+					selectedGame={game}
+				/>
+			)}
 		</div>
 	);
 }
