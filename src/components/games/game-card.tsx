@@ -189,7 +189,15 @@ export function GameCard({
 						<span className="text-xs sm:text-sm text-gray-500 font-bold">
 							Placar
 						</span>
-						<div className="flex items-center gap-1">
+						<button
+							type="button"
+							disabled={!isAdmin}
+							onClick={() => (isAdmin ? setIsUpdateResultModalOpen(true) : {})}
+							className={cn(
+								"flex items-center gap-1",
+								isAdmin && "cursor-pointer",
+							)}
+						>
 							<div className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-md border border-gray-200">
 								<span
 									className={`text-sm sm:text-base ${
@@ -213,7 +221,7 @@ export function GameCard({
 									{checkValue(game.away_score) ? game.away_score : "-"}
 								</span>
 							</div>
-						</div>
+						</button>
 						<span className="text-[10px] sm:text-xs text-gray-400 mt-1 font-bold">
 							{new Date(game.game_time).toLocaleTimeString("pt-BR", {
 								hour: "2-digit",
@@ -252,19 +260,6 @@ export function GameCard({
 							) : (
 								<DiamondPlus className="left-[6px] relative" />
 							)}
-						</Button>
-					</div>
-				)}
-
-				{isAdmin && (
-					<div className="absolute right-[6px] md:right-[38px] top-0 h-full">
-						<Button
-							onClick={() => setIsUpdateResultModalOpen(true)}
-							variant="secondary"
-							title="Atualizar Resultado"
-							className="bg-blue-500 text-white font-medium h-full hover:bg-blue-600 cursor-pointer"
-						>
-							<Pen className="left-[6px] relative" />
 						</Button>
 					</div>
 				)}
