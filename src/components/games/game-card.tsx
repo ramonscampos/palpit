@@ -284,7 +284,7 @@ export function GameCard({
 					)}
 				</button>
 
-				{!!userGuess && !isPredictionClosed && !isAdmin && (
+				{!!userGuess && !isPredictionClosed && (
 					<button
 						type="button"
 						onClick={() => handleOnGuess(game.id)}
