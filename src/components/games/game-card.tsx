@@ -246,7 +246,7 @@ export function GameCard({
 					</div>
 				</div>
 
-				{!userGuess && !isAdmin && (
+				{!userGuess && (
 					<div className="absolute right-[6px] md:right-[38px] top-0 h-full">
 						<Button
 							onClick={() => handleOnGuess(game.id)}
