@@ -3,6 +3,7 @@
 import { GameList } from "@/components/games/game-list";
 import { LeaderboardTable } from "@/components/leaderboard/leaderboard-table";
 import { BrazilianTeamBet } from "@/components/predictions/brazilian-team-bet";
+import { ChampionTeamBet } from "@/components/predictions/champion-team-bet";
 import { PredictionModal } from "@/components/predictions/prediction-modal";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase-client";
@@ -171,8 +172,11 @@ export default function HomePage() {
 				</div>
 			</header>
 
-			<main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 min-h-dvh">
-				<BrazilianTeamBet currentUserId={currentUser?.id ?? null} />
+			<main className="max-w-5xl mx-auto py-6 sm:px-6 lg:px-8 min-h-dvh">
+				<div className="grid grid-cols-1 md:grid-cols-2 mb-6 gap-6 p-4 md:p-0 pt-2">
+					<BrazilianTeamBet currentUserId={currentUser?.id ?? null} />
+					<ChampionTeamBet currentUserId={currentUser?.id ?? null} />
+				</div>
 				<Suspense fallback={<div>Carregando params...</div>}>
 					<GameList
 						games={games}

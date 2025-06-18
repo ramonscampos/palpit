@@ -174,6 +174,37 @@ export type Database = {
 					},
 				];
 			};
+			champion_bet: {
+				Row: {
+					user_id: string;
+					team_id: string;
+					created_at: string;
+				};
+				Insert: {
+					user_id: string;
+					team_id: string;
+					created_at?: string;
+				};
+				Update: {
+					user_id?: string;
+					team_id?: string;
+					created_at?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: "champion_bet_user_id_fkey";
+						columns: ["user_id"];
+						referencedRelation: "profiles";
+						referencedColumns: ["id"];
+					},
+					{
+						foreignKeyName: "champion_bet_team_id_fkey";
+						columns: ["team_id"];
+						referencedRelation: "teams";
+						referencedColumns: ["id"];
+					},
+				];
+			};
 		};
 		Views: {
 			[_ in never]: never;

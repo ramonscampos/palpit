@@ -2,10 +2,10 @@ import { Button } from "@/components/ui/button";
 import { Database } from "@/types/supabase";
 import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
-import { BrazilianTeamModal } from "./brazilian-team-modal";
+import { ChampionTeamModal } from "./champion-team-modal";
 
 type Team = Database["public"]["Tables"]["teams"]["Row"];
-type BrazilBet = Database["public"]["Tables"]["brazil_bet"]["Row"] & {
+type ChampionBet = Database["public"]["Tables"]["champion_bet"]["Row"] & {
 	team: Team;
 	user: {
 		avatar_url: string | null;
@@ -13,7 +13,7 @@ type BrazilBet = Database["public"]["Tables"]["brazil_bet"]["Row"] & {
 	};
 };
 
-interface BrazilianTeamBetProps {
+interface ChampionTeamBetProps {
 	currentUserId: string | null;
 }
 
@@ -25,15 +25,21 @@ interface GroupedBet {
 	}>;
 }
 
-export function BrazilianTeamBet({ currentUserId }: BrazilianTeamBetProps) {
+export function ChampionTeamBet({ currentUserId }: ChampionTeamBetProps) {
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [groupedBets, setGroupedBets] = useState<GroupedBet[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [userHasBet, setUserHasBet] = useState(false);
 
+	const isBettingOpen = () => {
+		const deadline = new Date("2025-06-18T23:59:59-03:00");
+		const now = new Date();
+		return now.getTime() <= deadline.getTime();
+	};
+
 	const loadBets = useCallback(async () => {
 		try {
-			const response = await fetch("/api/brazil-bet");
+			const response = await fetch("/api/champion-bet");
 			if (!response.ok) {
 				throw new Error("Erro ao carregar palpites");
 			}
@@ -42,7 +48,7 @@ export function BrazilianTeamBet({ currentUserId }: BrazilianTeamBetProps) {
 			const bets = data || [];
 
 			// Agrupar palpites por time
-			const grouped = bets.reduce((acc: GroupedBet[], bet: BrazilBet) => {
+			const grouped = bets.reduce((acc: GroupedBet[], bet: ChampionBet) => {
 				const existingTeam = acc.find((group) => group.team.id === bet.team.id);
 
 				if (existingTeam) {
@@ -64,7 +70,7 @@ export function BrazilianTeamBet({ currentUserId }: BrazilianTeamBetProps) {
 
 			setGroupedBets(grouped);
 			setUserHasBet(
-				bets.some((bet: BrazilBet) => bet.user_id === currentUserId),
+				bets.some((bet: ChampionBet) => bet.user_id === currentUserId),
 			);
 		} catch (error) {
 			console.error("Erro ao carregar palpites:", error);
@@ -81,7 +87,7 @@ export function BrazilianTeamBet({ currentUserId }: BrazilianTeamBetProps) {
 		if (!currentUserId) return;
 
 		try {
-			const response = await fetch("/api/brazil-bet", {
+			const response = await fetch("/api/champion-bet", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -115,15 +121,20 @@ export function BrazilianTeamBet({ currentUserId }: BrazilianTeamBetProps) {
 			<div className="bg-white rounded-lg shadow-sm border border-gray-200">
 				<div className="flex justify-between items-center p-4 border-b border-gray-200">
 					<h2 className="text-lg font-semibold text-gray-900">
-						🇧🇷 Time brasileiro que vai mais longe
+						🏆 Campeão da Copa
 					</h2>
-					{currentUserId && !userHasBet && (
+					{currentUserId && !userHasBet && isBettingOpen() && (
 						<Button
 							onClick={() => setIsModalOpen(true)}
 							className="bg-gray-700 hover:bg-gray-900 font-bold"
 						>
 							Fazer Palpite
 						</Button>
+					)}
+					{!isBettingOpen() && (
+						<span className="text-sm text-gray-500">
+							Período de palpites encerrado
+						</span>
 					)}
 				</div>
 
@@ -142,6 +153,7 @@ export function BrazilianTeamBet({ currentUserId }: BrazilianTeamBetProps) {
 											alt={group.team.name}
 											width={40}
 											height={40}
+											className="object-contain h-10"
 										/>
 									)}
 									<div>
@@ -175,15 +187,15 @@ export function BrazilianTeamBet({ currentUserId }: BrazilianTeamBetProps) {
 						))}
 					</div>
 				)}
-
-				{currentUserId && !userHasBet && (
-					<BrazilianTeamModal
-						isOpen={isModalOpen}
-						onClose={() => setIsModalOpen(false)}
-						onSelectTeam={handleSelectTeam}
-					/>
-				)}
 			</div>
+
+			{currentUserId && !userHasBet && (
+				<ChampionTeamModal
+					isOpen={isModalOpen}
+					onClose={() => setIsModalOpen(false)}
+					onSelectTeam={handleSelectTeam}
+				/>
+			)}
 		</div>
 	);
 }

@@ -46,23 +46,26 @@ export function LeaderboardTable() {
 	}
 
 	// Calcula as posições considerando empates
-	const actualPositions: number[] = leaderboard.reduce((acc: number[], entry, index) => {
-		if (index === 0) {
-			acc.push(1);
-		} else {
-			const prevEntry = leaderboard[index - 1];
-			if (entry.totalPoints === prevEntry.totalPoints) {
-				acc.push(acc[index - 1]);
+	const actualPositions: number[] = leaderboard.reduce(
+		(acc: number[], entry, index) => {
+			if (index === 0) {
+				acc.push(1);
 			} else {
-				acc.push(acc[index - 1] + 1);
+				const prevEntry = leaderboard[index - 1];
+				if (entry.totalPoints === prevEntry.totalPoints) {
+					acc.push(acc[index - 1]);
+				} else {
+					acc.push(acc[index - 1] + 1);
+				}
 			}
-		}
-		return acc;
-	}, []);
+			return acc;
+		},
+		[],
+	);
 
 	return (
 		<>
-			<div className="mt-8 relative bg-white rounded-lg shadow w-full max-w-4xl mx-auto p-4 z-[1]">
+			<div className="mt-8 relative bg-white rounded-lg shadow w-full z-[1]">
 				<div className="px-4 py-5 sm:px-6 border-b border-gray-200">
 					<h2 className="text-xl font-semibold text-gray-900">
 						Tabela de Pontuação
@@ -148,7 +151,7 @@ export function LeaderboardTable() {
 					</table>
 				</div>
 			</div>
-			<div className="-mt-4 relative text-xs text-gray-500 text-right bg-gray-50 rounded-lg shadow w-full max-w-4xl mx-auto pt-6 pb-2 z-0 px-4">
+			<div className="-mt-4 relative text-xs text-gray-500 text-right bg-gray-50 rounded-lg shadow w-full pt-6 pb-2 z-0 px-4">
 				<span>
 					<b>AP:</b> Acertos de Placar
 				</span>
