@@ -173,10 +173,6 @@ export default function HomePage() {
 			</header>
 
 			<main className="max-w-5xl mx-auto py-6 sm:px-6 lg:px-8 min-h-dvh">
-				<div className="grid grid-cols-1 md:grid-cols-2 mb-6 gap-6 p-4 md:p-0 pt-2">
-					<BrazilianTeamBet currentUserId={currentUser?.id ?? null} />
-					<ChampionTeamBet currentUserId={currentUser?.id ?? null} />
-				</div>
 				<Suspense fallback={<div>Carregando params...</div>}>
 					<GameList
 						games={games}
@@ -186,6 +182,10 @@ export default function HomePage() {
 					/>
 				</Suspense>
 				<LeaderboardTable />
+				<div className="grid grid-cols-1 md:grid-cols-2 my-6 mt-10 gap-6 p-4 md:p-0 pt-2">
+					<BrazilianTeamBet currentUserId={currentUser?.id ?? null} />
+					<ChampionTeamBet currentUserId={currentUser?.id ?? null} />
+				</div>
 			</main>
 
 			<footer className="bg-white shadow-sm border-t border-gray-200 w-full z-[4] py-4">

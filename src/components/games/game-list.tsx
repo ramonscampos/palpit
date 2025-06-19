@@ -84,7 +84,7 @@ export function GameList({
 	};
 
 	return (
-		<div className="w-full">
+		<div className="w-full px-4 md:px-0">
 			<GameHeader
 				date={currentDate}
 				onPreviousDay={handlePreviousDay}

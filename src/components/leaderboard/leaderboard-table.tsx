@@ -64,7 +64,7 @@ export function LeaderboardTable() {
 	);
 
 	return (
-		<>
+		<div className="px-4 md:px-0">
 			<div className="mt-8 relative bg-white rounded-lg shadow w-full z-[1]">
 				<div className="px-4 py-5 sm:px-6 border-b border-gray-200">
 					<h2 className="text-xl font-semibold text-gray-900">
@@ -108,10 +108,10 @@ export function LeaderboardTable() {
 						<tbody className="bg-white divide-y divide-gray-200 font-bold">
 							{leaderboard.map((entry, index) => (
 								<tr key={entry.profile.id} className="hover:bg-gray-50">
-									<td className="w-12 px-2 py-4 whitespace-nowrap text-xl font-bold text-gray-500">
+									<td className="w-12 pl-2 py-4 whitespace-nowrap text-xl font-bold text-gray-500 text-center">
 										{actualPositions[index]}º
 									</td>
-									<td className="px-6 pl-2 md:pl-6 py-4 whitespace-nowrap">
+									<td className="px-6 pl-2 py-4 whitespace-nowrap">
 										<div className="flex items-center">
 											<div className="flex-shrink-0 h-10 w-10 relative">
 												{entry.profile.avatar_url ? (
@@ -131,7 +131,7 @@ export function LeaderboardTable() {
 											</div>
 											<div className="ml-4">
 												<div className="text-sm text-gray-900">
-													{entry.profile.name}
+													{entry.profile.name?.split(' ')[0]}
 												</div>
 											</div>
 										</div>
@@ -162,6 +162,6 @@ export function LeaderboardTable() {
 					<b>P:</b> Pontuação
 				</span>
 			</div>
-		</>
+		</div>
 	);
 }
