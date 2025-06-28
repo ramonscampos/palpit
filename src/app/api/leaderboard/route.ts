@@ -1,10 +1,19 @@
-import { BrazilBet, ChampionBet, Game, Guess, Profile, TeamProgress } from "@/types/leaderboard";
+import {
+    BrazilBet,
+    ChampionBet,
+    Game,
+    Guess,
+    Profile,
+    TeamProgress,
+} from "@/types/leaderboard";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 // Função para calcular o brasileiro que foi mais longe
-async function calculateBrazilianChampion(supabase: any): Promise<string | null> {
+async function calculateBrazilianChampion(
+	supabase: any,
+): Promise<string | null> {
 	// Buscar todos os times brasileiros que foram apostados
 	const { data: brazilBets, error: brazilBetsError } = await supabase
 		.from("brazil_bet")
@@ -35,9 +44,10 @@ async function calculateBrazilianChampion(supabase: any): Promise<string | null>
 	if (!games) return null;
 
 	// Filtrar apenas jogos que envolvem times brasileiros apostados
-	const brazilianGames = games.filter((game: Game) =>
-		brazilianTeamIds.includes(game.home_team_id) ||
-		brazilianTeamIds.includes(game.away_team_id)
+	const brazilianGames = games.filter(
+		(game: Game) =>
+			brazilianTeamIds.includes(game.home_team_id) ||
+			brazilianTeamIds.includes(game.away_team_id),
 	);
 
 	// Calcular progresso de cada time brasileiro
@@ -77,44 +87,15 @@ async function calculateBrazilianChampion(supabase: any): Promise<string | null>
 		}
 	});
 
-	// Encontrar o campeão brasileiro
-	let championTeamId: string | null = null;
-	let maxGames = 0;
-	let maxGoalDifference = -Infinity;
-
-	Object.entries(teamProgress).forEach(([teamId, progress]) => {
-		if (!progress.eliminated && progress.games > maxGames) {
-			maxGames = progress.games;
-			championTeamId = teamId;
-		}
-	});
-
-	if (championTeamId) {
-		const championProgress = teamProgress[championTeamId];
-		maxGoalDifference = championProgress.goalDifference;
-		Object.entries(teamProgress).forEach(([teamId, progress]) => {
-			if (!progress.eliminated &&
-				progress.games === maxGames &&
-				progress.goalDifference > maxGoalDifference) {
-				maxGoalDifference = progress.goalDifference;
-				championTeamId = teamId;
-			}
-		});
+	// Só há campeão se restar apenas UM time não eliminado
+	const notEliminated = Object.entries(teamProgress).filter(
+		([, progress]) => !progress.eliminated
+	);
+	if (notEliminated.length !== 1) {
+		return null;
 	}
-
-	if (!championTeamId) {
-		Object.entries(teamProgress).forEach(([teamId, progress]) => {
-			if (progress.games > maxGames) {
-				maxGames = progress.games;
-				championTeamId = teamId;
-			} else if (progress.games === maxGames && progress.goalDifference > maxGoalDifference) {
-				maxGoalDifference = progress.goalDifference;
-				championTeamId = teamId;
-			}
-		});
-	}
-
-	return championTeamId;
+	// Se só sobrou um, ele é o campeão
+	return notEliminated[0][0];
 }
 
 // Função para calcular o campeão geral (champion_bet)
@@ -141,7 +122,8 @@ async function calculateChampionTeam(supabase: any): Promise<string | null> {
 	if (!games) return null;
 
 	// Calcular progresso de cada time apostado
-	const teamProgress: Record<string, { games: number; lastGameWin: boolean }> = {};
+	const teamProgress: Record<string, { games: number; lastGameWin: boolean }> =
+		{};
 	championTeamIds.forEach((teamId: string) => {
 		teamProgress[teamId] = { games: 0, lastGameWin: false };
 	});
@@ -152,14 +134,16 @@ async function calculateChampionTeam(supabase: any): Promise<string | null> {
 			teamProgress[teamId].games++;
 			// Se for o 7º jogo, verificar se venceu
 			if (teamProgress[teamId].games === 7) {
-				teamProgress[teamId].lastGameWin = (game.home_score ?? 0) > (game.away_score ?? 0);
+				teamProgress[teamId].lastGameWin =
+					(game.home_score ?? 0) > (game.away_score ?? 0);
 			}
 		}
 		if (championTeamIds.includes(game.away_team_id)) {
 			const teamId = game.away_team_id;
 			teamProgress[teamId].games++;
 			if (teamProgress[teamId].games === 7) {
-				teamProgress[teamId].lastGameWin = (game.away_score ?? 0) > (game.home_score ?? 0);
+				teamProgress[teamId].lastGameWin =
+					(game.away_score ?? 0) > (game.home_score ?? 0);
 			}
 		}
 	});
@@ -184,6 +168,8 @@ export async function GET() {
 		// Calcular o campeão geral
 		const championOverallTeamId = await calculateChampionTeam(supabase);
 
+		console.log("#####################", championTeamId);
+
 		// Buscar todos os perfis
 		const { data: profiles, error: profilesError } = await supabase
 			.from("profiles")
@@ -194,7 +180,9 @@ export async function GET() {
 		// Buscar todos os jogos finalizados
 		const { data: games, error: gamesError } = await supabase
 			.from("games")
-			.select(`*, home_team:teams!games_home_team_id_fkey(*), away_team:teams!games_away_team_id_fkey(*)`)
+			.select(
+				`*, home_team:teams!games_home_team_id_fkey(*), away_team:teams!games_away_team_id_fkey(*)`,
+			)
 			.not("home_score", "is", null)
 			.not("away_score", "is", null);
 		if (gamesError) throw gamesError;
@@ -226,7 +214,7 @@ export async function GET() {
 		let usersWhoBetOnBrazilianChampion: BrazilBet[] = [];
 		if (championTeamId && brazilBets.length > 0) {
 			usersWhoBetOnBrazilianChampion = brazilBets.filter(
-				(bet: BrazilBet) => bet.team_id === championTeamId
+				(bet: BrazilBet) => bet.team_id === championTeamId,
 			);
 			if (usersWhoBetOnBrazilianChampion.length > 0) {
 				brazilianChampionPoints = 30 / usersWhoBetOnBrazilianChampion.length;
@@ -238,7 +226,7 @@ export async function GET() {
 		let usersWhoBetOnChampion: ChampionBet[] = [];
 		if (championOverallTeamId && championBets.length > 0) {
 			usersWhoBetOnChampion = championBets.filter(
-				(bet: ChampionBet) => bet.team_id === championOverallTeamId
+				(bet: ChampionBet) => bet.team_id === championOverallTeamId,
 			);
 			if (usersWhoBetOnChampion.length > 0) {
 				championPoints = 30 / usersWhoBetOnChampion.length;
@@ -247,7 +235,9 @@ export async function GET() {
 
 		// Calcular pontuação para cada perfil
 		const leaderboardData = profiles.map((profile: Profile) => {
-			const userGuesses = guesses.filter((g: Guess) => g.user_id === profile.id);
+			const userGuesses = guesses.filter(
+				(g: Guess) => g.user_id === profile.id,
+			);
 			let exactScoreHits = 0;
 			let winnerHits = 0;
 
@@ -282,17 +272,20 @@ export async function GET() {
 
 			// Verificar se o usuário apostou no brasileiro campeão
 			const userBetOnBrazilianChampion = usersWhoBetOnBrazilianChampion.some(
-				(bet: BrazilBet) => bet.user_id === profile.id
+				(bet: BrazilBet) => bet.user_id === profile.id,
 			);
-			const brazilianPoints = userBetOnBrazilianChampion ? brazilianChampionPoints : 0;
+			const brazilianPoints = userBetOnBrazilianChampion
+				? brazilianChampionPoints
+				: 0;
 
 			// Verificar se o usuário apostou no campeão geral
 			const userBetOnChampion = usersWhoBetOnChampion.some(
-				(bet: ChampionBet) => bet.user_id === profile.id
+				(bet: ChampionBet) => bet.user_id === profile.id,
 			);
 			const championTeamPoints = userBetOnChampion ? championPoints : 0;
 
-			const totalPoints = exactScoreHits * 3 + winnerHits + brazilianPoints + championTeamPoints;
+			const totalPoints =
+				exactScoreHits * 3 + winnerHits + brazilianPoints + championTeamPoints;
 
 			return {
 				profile,
@@ -317,7 +310,7 @@ export async function GET() {
 		console.error("Erro ao carregar leaderboard:", error);
 		return NextResponse.json(
 			{ error: "Erro ao carregar leaderboard" },
-			{ status: 500 }
+			{ status: 500 },
 		);
 	}
 }
