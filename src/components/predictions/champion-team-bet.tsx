@@ -131,11 +131,6 @@ export function ChampionTeamBet({ currentUserId }: ChampionTeamBetProps) {
 							Fazer Palpite
 						</Button>
 					)}
-					{!isBettingOpen() && (
-						<span className="text-sm text-gray-500">
-							Período de palpites encerrado
-						</span>
-					)}
 				</div>
 
 				{groupedBets.length === 0 ? (

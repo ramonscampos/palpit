@@ -10,6 +10,8 @@ interface LeaderboardEntry {
 	profile: Profile;
 	exactScoreHits: number;
 	winnerHits: number;
+	brazilianChampionPoints: number;
+	championTeamPoints: number;
 	totalPoints: number;
 }
 
@@ -87,15 +89,27 @@ export function LeaderboardTable() {
 								</th>
 								<th
 									scope="col"
-									className="w-24 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+									className="hidden md:table-cell w-24 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
 								>
 									AP
 								</th>
 								<th
 									scope="col"
-									className="w-24 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+									className="hidden md:table-cell w-24 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
 								>
 									AV
+								</th>
+								<th
+									scope="col"
+									className="hidden md:table-cell w-24 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+								>
+									BC
+								</th>
+								<th
+									scope="col"
+									className="hidden md:table-cell w-24 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+								>
+									CC
 								</th>
 								<th
 									scope="col"
@@ -131,16 +145,22 @@ export function LeaderboardTable() {
 											</div>
 											<div className="ml-4">
 												<div className="text-sm text-gray-900">
-													{entry.profile.name?.split(' ')[0]}
+													{entry.profile.name?.split(" ")[0]}
 												</div>
 											</div>
 										</div>
 									</td>
-									<td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">
+									<td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">
 										{entry.exactScoreHits}
 									</td>
-									<td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">
+									<td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">
 										{entry.winnerHits}
+									</td>
+									<td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">
+										{entry.brazilianChampionPoints}
+									</td>
+									<td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">
+										{entry.championTeamPoints}
 									</td>
 									<td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-900">
 										{entry.totalPoints}
@@ -152,14 +172,24 @@ export function LeaderboardTable() {
 				</div>
 			</div>
 			<div className="-mt-4 relative text-xs text-gray-500 text-right bg-gray-50 rounded-lg shadow w-full pt-6 pb-2 z-0 px-4">
-				<span>
+				<span className="hidden md:inline">
 					<b>AP:</b> Acertos de Placar
 				</span>
-				<span className="ml-4">
+				<span className="hidden md:inline ml-4">
 					<b>AV:</b> Acertos de Vencedor
+				</span>
+				<span className="hidden md:inline ml-4">
+					<b>BC:</b> Brasileiro Campeão
+				</span>
+				<span className="hidden md:inline ml-4">
+					<b>CC:</b> Campeão Geral
 				</span>
 				<span className="ml-4">
 					<b>P:</b> Pontuação
+				</span>
+
+				<span className="block text-center mt-2 text-red-400 md:hidden">
+					Para ver os detalhes da pontuação, vire o celular ou abra no desktop.
 				</span>
 			</div>
 		</div>
