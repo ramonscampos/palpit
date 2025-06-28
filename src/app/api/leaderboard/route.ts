@@ -1,10 +1,10 @@
 import {
-    BrazilBet,
-    ChampionBet,
-    Game,
-    Guess,
-    Profile,
-    TeamProgress,
+	BrazilBet,
+	ChampionBet,
+	Game,
+	Guess,
+	Profile,
+	TeamProgress,
 } from "@/types/leaderboard";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
@@ -89,7 +89,7 @@ async function calculateBrazilianChampion(
 
 	// Só há campeão se restar apenas UM time não eliminado
 	const notEliminated = Object.entries(teamProgress).filter(
-		([, progress]) => !progress.eliminated
+		([, progress]) => !progress.eliminated,
 	);
 	if (notEliminated.length !== 1) {
 		return null;
@@ -217,7 +217,7 @@ export async function GET() {
 				(bet: BrazilBet) => bet.team_id === championTeamId,
 			);
 			if (usersWhoBetOnBrazilianChampion.length > 0) {
-				brazilianChampionPoints = 30 / usersWhoBetOnBrazilianChampion.length;
+				brazilianChampionPoints = 15;
 			}
 		}
 
@@ -229,7 +229,7 @@ export async function GET() {
 				(bet: ChampionBet) => bet.team_id === championOverallTeamId,
 			);
 			if (usersWhoBetOnChampion.length > 0) {
-				championPoints = 30 / usersWhoBetOnChampion.length;
+				championPoints = 15;
 			}
 		}
 
