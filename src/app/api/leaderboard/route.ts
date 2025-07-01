@@ -164,9 +164,11 @@ export async function GET() {
 		const supabase = createRouteHandlerClient({ cookies });
 
 		// Calcular o brasileiro campeão
-		const championTeamId = await calculateBrazilianChampion(supabase);
+		// const championTeamId = await calculateBrazilianChampion(supabase);
+		const championTeamId = undefined;
 		// Calcular o campeão geral
-		const championOverallTeamId = await calculateChampionTeam(supabase);
+		// const championOverallTeamId = await calculateChampionTeam(supabase);
+		const championOverallTeamId = undefined;
 
 		console.log("#####################", championTeamId);
 
